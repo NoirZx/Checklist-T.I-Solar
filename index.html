@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Checklist Diário T.I Solar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="icone.ico" type="image/x-icon">
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --accent: #00ffcc;
+    }
+    body.light {
+      --bg-color: #f0f0f0;
+      --card-color: #ffffff;
+      --text-color: #111111;
+      --accent: #00796b;
+      background-image: none;
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-image: url('fundo.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7); /* escurece a imagem de fundo */
+      z-index: -1;
+    }
+
+    header {
+      position: relative;
+      padding: 20px 40px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 3em;
+      color: var(--accent);
+      margin: 0;
+    }
+    .info {
+      position: absolute;
+      top: 20px;
+      right: 40px;
+      text-align: right;
+      font-size: 1em;
+    }
+    .info span {
+      display: block;
+    }
+    .controls {
+      position: absolute;
+      top: 20px;
+      left: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .main-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .main-controls button,
+    .secondary-controls button {
+      background-color: var(--card-color);
+      color: var(--text-color);
+      border: 1px solid var(--accent);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .main-controls button:hover,
+    .secondary-controls button:hover {
+      background-color: var(--accent);
+      color: #000;
+    }
+    main {
+      display: flex;
+      justify-content: space-between;
+      padding: 40px;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    ul {
+      list-style-type: decimal;
+      padding-left: 20px;
+      margin: 0;
+      max-width: 700px;
+    }
+    li {
+      background-color: var(--card-color);
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 1.5em;
+      box-shadow: 0 4px 10px rgba(0, 255, 204, 0.1);
+    }
+    li label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      border-left: 5px solid var(--accent);
+      padding-left: 10px;
+      transition: border-color 0.3s, color 0.3s;
+    }
+    li span {
+      transition: color 0.3s ease, text-decoration 0.3s ease;
+    }
+    input[type="checkbox"] {
+      transform: scale(1.5);
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+    .checked {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .relatorio {
+      max-width: 600px;
+      flex: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--card-color);
+      color: var(--text-color);
+    }
+    th, td {
+      border: 1px solid var(--accent);
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: var(--accent);
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="controls">
+      <div class="main-controls">
+        <button onclick="alternarTema()">🌗 Alternar Tema</button>
+        <button onclick="resetarRelatorio()">🗑️ Limpar Relatório</button>
+      </div>
+      <div class="secondary-controls">
+        <button onclick="resetarChecklist()">🔁 Resetar Checklist</button>
+      </div>
+    </div>
+    <h1>Checklist Diário T.I Solar</h1>
+    <div class="info">
+      <span id="hora">⏰ Carregando hora...</span>
+      <span id="clima">🌡️ Carregando clima...</span>
+    </div>
+  </header>
+
+  <main>
+    <ul id="checklist">
+      <li><input type="checkbox" id="tarefa1" onclick="registrarConclusao(this)"><label for="tarefa1"><span>Verificar equipamentos do Data Center</span></label></li>
+      <li><input type="checkbox" id="tarefa2" onclick="registrarConclusao(this)"><label for="tarefa2"><span>Validar a disponibilidade dos canais de TV</span></label></li>
+      <li><input type="checkbox" id="tarefa3" onclick="registrarConclusao(this)"><label for="tarefa3"><span>Validar chamados em aberto</span></label></li>
+      <li><input type="checkbox" id="tarefa4" onclick="registrarConclusao(this)"><label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label></li>
+      <li><input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)"><label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label></li>
+      <li><input type="checkbox" id="tarefa6" onclick="registrarConclusao(this)"><label for="tarefa6"><span>Verificar TVs com Pix Media nas Áreas</span></label></li>
+    </ul>
+
+    <div class="relatorio">
+      <h2>✅ Relatório de Conclusão</h2>
+      <table id="tabelaRelatorio">
+        <thead>
+          <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    function atualizarHora() {
+      const data = new Date();
+      const opcoes = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const horaBrasilia = new Intl.DateTimeFormat('pt-BR', opcoes).format(data);
+      document.getElementById('hora').textContent = `⏰ Horário de Brasília: ${horaBrasilia}`;
+    }
+    setInterval(atualizarHora, 1000);
+    atualizarHora();
+
+    function registrarConclusao(checkbox) {
+      const span = checkbox.parentElement.querySelector("span");
+      const tarefa = span.textContent;
+      const tabela = document.getElementById("tabelaRelatorio").querySelector("tbody");
+      span.classList.toggle("checked", checkbox.checked);
+      if (checkbox.checked) {
+        const agora = new Date();
+        const horario = agora.toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+        const novaLinha = tabela.insertRow(0);
+        novaLinha.insertCell(0).textContent = tarefa;
+        novaLinha.insertCell(1).textContent = horario;
+      }
+      salvarEstado();
+    }
+
+    function resetarChecklist() {
+      const checkboxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+        cb.parentElement.querySelector("span").classList.remove("checked");
+      });
+      salvarEstado();
+    }
+
+    function resetarRelatorio() {
+      const tbody = document.querySelector('#tabelaRelatorio tbody');
+      while (tbody.firstChild) {
+        tbody.removeChild(tbody.firstChild);
+      }
+      salvarEstado();
+    }
+
+    function alternarTema() {
+      document.body.classList.toggle('light');
+      localStorage.setItem('temaClaro', document.body.classList.contains('light'));
+    }
+
+    function salvarEstado() {
+      const checklist = [...document.querySelectorAll('#checklist li')].map(li => {
+        const span = li.querySelector("span");
+        return {
+          tarefa: span.textContent,
+          marcado: li.querySelector("input").checked
+        };
+      });
+      const relatorio = [...document.querySelectorAll('#tabelaRelatorio tbody tr')].map(tr => ({
+        tarefa: tr.cells[0].textContent,
+        dataHora: tr.cells[1].textContent
+      }));
+      localStorage.setItem('estadoChecklistTI', JSON.stringify({ checklist, relatorio }));
+    }
+
+    function carregarEstado() {
+      const salvo = JSON.parse(localStorage.getItem('estadoChecklistTI'));
+      if (salvo) {
+        salvo.checklist.forEach(itemSalvo => {
+          document.querySelectorAll('#checklist li').forEach(li => {
+            const span = li.querySelector("span");
+            if (span.textContent === itemSalvo.tarefa) {
+              const checkbox = li.querySelector("input");
+              checkbox.checked = itemSalvo.marcado;
+              span.classList.toggle("checked", itemSalvo.marcado);
+            }
+          });
+        });
+        const tbody = document.querySelector('#tabelaRelatorio tbody');
+        salvo.relatorio.forEach(reg => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = reg.tarefa;
+          row.insertCell(1).textContent = reg.dataHora;
+        });
+      }
+      const temaClaro = localStorage.getItem('temaClaro') === 'true';
+      if (temaClaro) document.body.classList.add('light');
+    }
+
+    async function carregarClima() {
+      const apiKey = 'f72b6474dc378f01668c752c37748576';
+      const cidade = 'Olimpia,BR';
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${apiKey}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
+        const dados = await response.json();
+        const temperatura = Math.round(dados.main.temp);
+        const descricao = dados.weather[0].description;
+        document.getElementById('clima').textContent = `🌡️ Olímpia-SP: ${temperatura}°C, ${descricao}`;
+      } catch (error) {
+        console.error("Erro ao obter clima:", error);
+        document.getElementById('clima').textContent = "Erro ao obter clima";
+      }
+    }
+
+    carregarEstado();
+    carregarClima();
+    setInterval(carregarClima, 1800000); // Atualiza clima a cada 30 minutos
+  </script>
+</body>
+</html>
