@@ -39,7 +39,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.7); /* escurece a imagem de fundo */
+      background: rgba(0, 0, 0, 0.7);
       z-index: -1;
     }
 
@@ -75,6 +75,7 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
     }
     .main-controls button,
     .secondary-controls button {
@@ -124,6 +125,9 @@
     }
     li span {
       transition: color 0.3s ease, text-decoration 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     input[type="checkbox"] {
       transform: scale(1.5);
@@ -134,6 +138,21 @@
       text-decoration: line-through;
       color: gray;
     }
+    .checked::after {
+      content: " ✔️";
+      font-size: 0.8em;
+    }
+
+    .fade-in {
+      animation: fadeInSuccess 0.5s ease-out;
+      background-color: #00ffcc33 !important;
+    }
+    @keyframes fadeInSuccess {
+      0% { background-color: transparent; }
+      50% { background-color: #00ffcc55; }
+      100% { background-color: transparent; }
+    }
+
     .relatorio {
       max-width: 600px;
       flex: 1;
@@ -153,17 +172,66 @@
       background-color: var(--accent);
       color: black;
     }
+
+    .floating-menu {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .floating-menu button {
+      background-color: var(--accent);
+      color: #000;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      font-size: 1.2em;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    .floating-menu button:hover {
+      transform: scale(1.1);
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 20px;
+      }
+      .controls {
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
+      .info {
+        position: static;
+        text-align: center;
+        margin-top: 10px;
+      }
+      main {
+        flex-direction: column;
+        padding: 20px;
+      }
+      .floating-menu {
+        display: flex;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="controls">
       <div class="main-controls">
-        <button onclick="alternarTema()">🌗 Alternar Tema</button>
-        <button onclick="resetarRelatorio()">🗑️ Limpar Relatório</button>
+        <button onclick="alternarTema()" aria-label="Alternar entre tema claro e escuro">🌗 Alternar Tema</button>
+        <button onclick="resetarRelatorio()" aria-label="Limpar relatório de tarefas">🗑️ Limpar Relatório</button>
       </div>
       <div class="secondary-controls">
-        <button onclick="resetarChecklist()">🔁 Resetar Checklist</button>
+        <button onclick="resetarChecklist()" aria-label="Resetar o checklist">🔁 Resetar Checklist</button>
       </div>
     </div>
     <h1>Checklist Diário T.I Solar</h1>
@@ -194,6 +262,13 @@
     </div>
   </main>
 
+  <!-- Botão flutuante para telas pequenas -->
+  <div class="floating-menu">
+    <button onclick="alternarTema()" aria-label="Tema">🌓</button>
+    <button onclick="resetarChecklist()" aria-label="Resetar">🔁</button>
+    <button onclick="resetarRelatorio()" aria-label="Limpar">🗑️</button>
+  </div>
+
   <script>
     function atualizarHora() {
       const data = new Date();
@@ -206,10 +281,15 @@
 
     function registrarConclusao(checkbox) {
       const span = checkbox.parentElement.querySelector("span");
-      const tarefa = span.textContent;
+      const tarefa = span.textContent.replace(" ✔️", "");
       const tabela = document.getElementById("tabelaRelatorio").querySelector("tbody");
       span.classList.toggle("checked", checkbox.checked);
+
       if (checkbox.checked) {
+        const li = checkbox.closest("li");
+        li.classList.add("fade-in");
+        setTimeout(() => li.classList.remove("fade-in"), 500);
+
         const agora = new Date();
         const horario = agora.toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
         const novaLinha = tabela.insertRow(0);
@@ -245,7 +325,7 @@
       const checklist = [...document.querySelectorAll('#checklist li')].map(li => {
         const span = li.querySelector("span");
         return {
-          tarefa: span.textContent,
+          tarefa: span.textContent.replace(" ✔️", ""),
           marcado: li.querySelector("input").checked
         };
       });
@@ -262,7 +342,7 @@
         salvo.checklist.forEach(itemSalvo => {
           document.querySelectorAll('#checklist li').forEach(li => {
             const span = li.querySelector("span");
-            if (span.textContent === itemSalvo.tarefa) {
+            if (span.textContent.includes(itemSalvo.tarefa)) {
               const checkbox = li.querySelector("input");
               checkbox.checked = itemSalvo.marcado;
               span.classList.toggle("checked", itemSalvo.marcado);
