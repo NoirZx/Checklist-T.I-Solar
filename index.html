@@ -266,7 +266,7 @@
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
   const SUPABASE_URL = "https://dpcmfkojothqxoaxgqxm.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvY..."; // sua key real
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4"; // substitua pela chave real
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   function atualizarHora() {
@@ -279,12 +279,16 @@
 
   async function salvarNoSupabase(checklist, relatorio) {
     try {
-      await supabase.from("relatorio_t.i").upsert({
-        id: 1,
-        checklist: JSON.stringify(checklist),
-        relatorio: JSON.stringify(relatorio),
-        atualizado_em: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from("relatorio_t.i")
+        .upsert({
+          id: 1,
+          checklist,
+          relatorio,
+          atualizado_em: new Date().toISOString()
+        })
+        .select();
+      if (error) throw error;
     } catch (err) {
       console.warn("Erro ao salvar no Supabase, fallback localStorage:", err);
       localStorage.setItem("estadoChecklistTI", JSON.stringify({ checklist, relatorio }));
@@ -300,8 +304,8 @@
         .single();
       if (error || !data) throw error || new Error("Sem dados");
       return {
-        checklist: JSON.parse(data.checklist),
-        relatorio: JSON.parse(data.relatorio)
+        checklist: data.checklist || [],
+        relatorio: data.relatorio || []
       };
     } catch (err) {
       console.warn("Erro ao carregar do Supabase, usando localStorage:", err);
@@ -348,9 +352,8 @@
   function registrarConclusao(checkbox) {
     const span = checkbox.parentElement.querySelector("span");
     const tarefa = span.textContent.replace(" ✔️", "");
-    const tabela = document.getElementById("tabelaRelatorio").querySelector("tbody");
+    const tabela = document.querySelector("#tabelaRelatorio tbody");
     span.classList.toggle("checked", checkbox.checked);
-
     if (checkbox.checked) {
       const li = checkbox.closest("li");
       li.classList.add("fade-in");
