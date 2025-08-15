@@ -86,9 +86,7 @@
       background-color: var(--accent);
       color: #000;
     }
-    main {
-      padding: 40px;
-    }
+    main { padding: 40px; }
     .container-flex {
       display: flex;
       gap: 40px;
@@ -127,36 +125,19 @@
       border-left: 5px solid var(--accent);
       padding-left: 10px;
     }
-    li span {
-      transition: color 0.3s ease, text-decoration 0.3s ease;
-    }
+    li span { transition: color 0.3s ease, text-decoration 0.3s ease; }
     input[type="checkbox"] {
       transform: scale(1.5);
       cursor: pointer;
       accent-color: var(--accent);
     }
-    .checked {
-      text-decoration: line-through;
-      color: gray;
-    }
-    .checked::after {
-      content: " ✔️";
-      font-size: 0.8em;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      color: var(--text-color);
-    }
-    th, td {
-      border: 1px solid var(--accent);
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: var(--accent);
-      color: black;
-    }
+    .checked { text-decoration: line-through; color: gray; }
+    .checked::after { content: " ✔️"; font-size: 0.8em; }
+
+    table { width: 100%; border-collapse: collapse; color: var(--text-color); }
+    th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; }
+    th { background-color: var(--accent); color: black; }
+
     .historico {
       background-color: var(--card-color);
       padding: 20px;
@@ -169,6 +150,46 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 10px;
+    }
+
+    /* Sub-checklist Wi-Fi */
+    .subwifi {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px dashed var(--accent);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.2);
+      display: none;
+    }
+    .subwifi .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+    }
+    .subwifi label {
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--card-color);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .subwifi input[type="number"] {
+      width: 110px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      background: #00000033;
+      color: var(--text-color);
+      font-size: 0.95em;
+    }
+    .hint {
+      margin-top: 8px;
+      font-size: 0.85em;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -194,12 +215,57 @@
     <div class="container-flex">
       <div class="checklist">
         <ul id="checklist">
-          <li><input type="checkbox" id="tarefa1" onclick="registrarConclusao(this)"><label for="tarefa1"><span>Verificar equipamentos do Data Center</span></label></li>
-          <li><input type="checkbox" id="tarefa2" onclick="registrarConclusao(this)"><label for="tarefa2"><span>Validar a disponibilidade dos canais de TV</span></label></li>
-          <li><input type="checkbox" id="tarefa3" onclick="registrarConclusao(this)"><label for="tarefa3"><span>Validar chamados em aberto</span></label></li>
-          <li><input type="checkbox" id="tarefa4" onclick="registrarConclusao(this)"><label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label></li>
-          <li><input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)"><label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label></li>
-          <li><input type="checkbox" id="tarefa6" onclick="registrarConclusao(this)"><label for="tarefa6"><span>Verificar TVs com Pix Media nas Áreas</span></label></li>
+          <li>
+            <input type="checkbox" id="tarefa1" onclick="registrarConclusao(this)">
+            <label for="tarefa1"><span>Verificar equipamentos do Data Center</span></label>
+          </li>
+          <li>
+            <input type="checkbox" id="tarefa2" onclick="registrarConclusao(this)">
+            <label for="tarefa2"><span>Validar a disponibilidade dos canais de TV</span></label>
+          </li>
+          <li>
+            <input type="checkbox" id="tarefa3" onclick="registrarConclusao(this)">
+            <label for="tarefa3"><span>Validar chamados em aberto</span></label>
+          </li>
+          <li>
+            <input type="checkbox" id="tarefa4" onclick="registrarConclusao(this)">
+            <label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label>
+          </li>
+
+          <!-- Tarefa Wi-Fi com sub-checklist -->
+          <li id="li-wifi">
+            <input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)">
+            <label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label>
+
+            <div id="subwifi" class="subwifi">
+              <div class="grid">
+                <label>Recepção
+                  <input type="number" id="wifi-recepcao" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+                <label>Minigolf
+                  <input type="number" id="wifi-minigolf" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+                <label>Sorveteria
+                  <input type="number" id="wifi-sorveteria" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+                <label>Bar Piscina
+                  <input type="number" id="wifi-barpiscina" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+                <label>Pizzaria
+                  <input type="number" id="wifi-pizzaria" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+                <label>Pastelaria
+                  <input type="number" id="wifi-pastelaria" min="0" step="1" inputmode="numeric" placeholder="Mbps">
+                </label>
+              </div>
+              <div class="hint">Preencha todos os 6 campos. A tarefa só será concluída quando todos estiverem preenchidos.</div>
+            </div>
+          </li>
+
+          <li>
+            <input type="checkbox" id="tarefa6" onclick="registrarConclusao(this)">
+            <label for="tarefa6"><span>Verificar TVs com Pix Media nas Áreas</span></label>
+          </li>
         </ul>
       </div>
 
@@ -239,6 +305,11 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+  const WIFI_INPUT_IDS = [
+    "wifi-recepcao","wifi-minigolf","wifi-sorveteria",
+    "wifi-barpiscina","wifi-pizzaria","wifi-pastelaria"
+  ];
+
   function dataHojeBR() {
     const hoje = new Date();
     return hoje.toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' });
@@ -252,16 +323,22 @@
   setInterval(atualizarHora, 1000);
   atualizarHora();
 
-  async function salvarNoSupabase(checklist, relatorio) {
+  async function salvarNoSupabase(checklist, relatorio, wifi) {
     try {
       const { error } = await supabase
         .from("relatorio_t.i")
-        .upsert({ id: 1, checklist, relatorio, atualizado_em: new Date().toISOString() })
+        .upsert({
+          id: 1,
+          checklist,
+          relatorio,
+          wifi, // guardamos também os valores dos testes de Wi-Fi
+          atualizado_em: new Date().toISOString()
+        })
         .select();
       if (error) throw error;
     } catch (err) {
       console.warn("Erro ao salvar no Supabase, fallback localStorage:", err);
-      localStorage.setItem("estadoChecklistTI", JSON.stringify({ checklist, relatorio }));
+      localStorage.setItem("estadoChecklistTI", JSON.stringify({ checklist, relatorio, wifi }));
     }
   }
 
@@ -273,27 +350,61 @@
         .eq("id", 1)
         .single();
       if (error || !data) throw error || new Error("Sem dados");
-      return { checklist: data.checklist || [], relatorio: data.relatorio || [] };
+      return {
+        checklist: data.checklist || [],
+        relatorio: data.relatorio || [],
+        wifi: data.wifi || null
+      };
     } catch (err) {
       console.warn("Erro ao carregar do Supabase, usando localStorage:", err);
       return JSON.parse(localStorage.getItem("estadoChecklistTI")) || null;
     }
   }
 
+  function coletarValoresWifi() {
+    const vals = {};
+    WIFI_INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      vals[id] = el?.value?.trim() ?? "";
+    });
+    return vals;
+  }
+
+  function preencherValoresWifi(vals) {
+    if (!vals) return;
+    WIFI_INPUT_IDS.forEach(id => {
+      if (vals[id] !== undefined) {
+        const el = document.getElementById(id);
+        el.value = vals[id];
+      }
+    });
+  }
+
+  function todosWifiPreenchidos() {
+    return WIFI_INPUT_IDS.every(id => {
+      const v = (document.getElementById(id).value || "").trim();
+      return v !== "" && !isNaN(Number(v));
+    });
+  }
+
   async function salvarEstado() {
     const checklist = [...document.querySelectorAll("#checklist li")].map(li => {
       const span = li.querySelector("span");
-      return { tarefa: span.textContent.replace(" ✔️", ""), marcado: li.querySelector("input").checked };
+      const tarefa = span.textContent.replace(" ✔️", "");
+      const marcado = li.querySelector("input").checked;
+      return { tarefa, marcado };
     });
     const relatorio = [...document.querySelectorAll("#tabelaHistorico tbody tr")].map(tr => ({
       tarefa: tr.cells[0].textContent, dataHora: tr.cells[1].textContent
     }));
-    await salvarNoSupabase(checklist, relatorio);
+    const wifi = coletarValoresWifi();
+    await salvarNoSupabase(checklist, relatorio, wifi);
   }
 
   async function carregarEstado() {
     const salvo = await carregarDoSupabase();
     if (salvo) {
+      // Restaurar checklist marcado
       document.querySelector("#tabelaRelatorio tbody").innerHTML = "";
       salvo.checklist.forEach(itemSalvo => {
         document.querySelectorAll("#checklist li").forEach(li => {
@@ -302,6 +413,12 @@
             const checkbox = li.querySelector("input");
             checkbox.checked = itemSalvo.marcado;
             span.classList.toggle("checked", itemSalvo.marcado);
+            // Se for a tarefa de Wi-Fi, restaurar valores e mostrar bloco
+            if (li.id === "li-wifi") {
+              if (salvo.wifi) preencherValoresWifi(salvo.wifi);
+              document.getElementById("subwifi").style.display = "block"; // deixa visível ao carregar (facilita revisão)
+            }
+            // Preencher relatório de hoje (se já houver registro salvo de hoje)
             if (itemSalvo.marcado) {
               const dataHora = salvo.relatorio.find(r => r.tarefa === itemSalvo.tarefa)?.dataHora;
               if (dataHora?.startsWith(dataHojeBR())) {
@@ -317,11 +434,84 @@
     }
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
+
+    // Listeners para validar Wi-Fi em tempo real e salvar
+    WIFI_INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", () => {
+        // Se a tarefa estiver marcada e algum campo for apagado, desfaz a conclusão
+        const cb = document.getElementById("tarefa5");
+        if (cb.checked && !todosWifiPreenchidos()) {
+          cb.checked = false;
+          cb.parentElement.querySelector("span").classList.remove("checked");
+          // Não removemos linhas antigas do relatório para manter o histórico, como no restante do app
+        }
+        salvarEstado();
+      });
+    });
+
+    // Sempre mostrar o bloco ao clicar na linha da tarefa de Wi-Fi
+    document.getElementById("li-wifi").addEventListener("click", (e) => {
+      // Evita esconder/mostrar quando clicamos nos inputs
+      if (e.target.tagName.toLowerCase() === "input" && e.target.type === "number") return;
+      document.getElementById("subwifi").style.display = "block";
+    });
   }
 
   function registrarConclusao(checkbox) {
     const span = checkbox.parentElement.querySelector("span");
     const tarefa = span.textContent.replace(" ✔️", "");
+
+    // Caso especial: Wi-Fi
+    if (checkbox.id === "tarefa5") {
+      // Sempre mostrar o bloco ao interagir
+      document.getElementById("subwifi").style.display = "block";
+
+      if (checkbox.checked) {
+        if (!todosWifiPreenchidos()) {
+          alert("Preencha os 6 campos de velocidade (apenas números) para concluir esta tarefa.");
+          checkbox.checked = false;
+          span.classList.remove("checked");
+          salvarEstado();
+          return;
+        }
+        // Monta descrição com Mbps
+        const mapa = {
+          "wifi-recepcao": "Recepção",
+          "wifi-minigolf": "Minigolf",
+          "wifi-sorveteria": "Sorveteria",
+          "wifi-barpiscina": "Bar Piscina",
+          "wifi-pizzaria": "Pizzaria",
+          "wifi-pastelaria": "Pastelaria"
+        };
+        const partes = WIFI_INPUT_IDS.map(id => `${mapa[id]} - ${document.getElementById(id).value.trim()} Mbps`);
+        const descricao = `Realizar testes de Wi-Fi em áreas comuns: ${partes.join(", ")}`;
+
+        // Relatório de hoje
+        const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+        if (horario.startsWith(dataHojeBR())) {
+          const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
+          novaLinhaHoje.insertCell(0).textContent = descricao;
+          novaLinhaHoje.insertCell(1).textContent = horario;
+        }
+        // Histórico
+        const novaLinhaHist = document.querySelector("#tabelaHistorico tbody").insertRow(0);
+        novaLinhaHist.insertCell(0).textContent = descricao;
+        novaLinhaHist.insertCell(1).textContent = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+
+        // Visual
+        span.classList.add("checked");
+        salvarEstado();
+        return;
+      } else {
+        // Desmarcando: apenas tira visual e salva
+        span.classList.remove("checked");
+        salvarEstado();
+        return;
+      }
+    }
+
+    // Fluxo padrão para demais tarefas
     span.classList.toggle("checked", checkbox.checked);
     if (checkbox.checked) {
       const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
@@ -332,16 +522,19 @@
       }
       const novaLinhaHist = document.querySelector("#tabelaHistorico tbody").insertRow(0);
       novaLinhaHist.insertCell(0).textContent = tarefa;
-      novaLinhaHist.insertCell(1).textContent = horario;
+      novaLinhaHist.insertCell(1).textContent = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
     }
     salvarEstado();
   }
 
   function resetarChecklist() {
-    document.querySelectorAll('#checklist input').forEach(cb => {
+    document.querySelectorAll('#checklist input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
       cb.parentElement.querySelector("span").classList.remove("checked");
     });
+    // Limpar campos Wi-Fi e esconder bloco
+    WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
+    document.getElementById("subwifi").style.display = "none";
     salvarEstado();
   }
 
@@ -357,11 +550,12 @@
   }
 
   async function carregarClima() {
-    const apiKey = 'SUA_API_OPENWEATHER';
+    const apiKey = 'f72b6474dc378f01668c752c37748576'; // <- Substitua pela sua chave real
     const cidade = 'Olimpia,BR';
     try {
       const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${apiKey}`);
       const dados = await r.json();
+      if (!dados?.main || !dados?.weather) throw new Error("Resposta inválida");
       document.getElementById('clima').textContent = `🌡️ Olímpia-SP: ${Math.round(dados.main.temp)}°C, ${dados.weather[0].description}`;
     } catch {
       document.getElementById('clima').textContent = "Erro ao obter clima";
