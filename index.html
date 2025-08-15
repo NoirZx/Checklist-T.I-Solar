@@ -58,9 +58,6 @@
       text-align: right;
       font-size: 1em;
     }
-    .info span {
-      display: block;
-    }
     .controls {
       position: absolute;
       top: 20px;
@@ -69,14 +66,13 @@
       flex-direction: column;
       gap: 10px;
     }
-    .main-controls {
+    .main-controls,
+    .secondary-controls {
       display: flex;
       gap: 10px;
-      align-items: center;
       flex-wrap: wrap;
     }
-    .main-controls button,
-    .secondary-controls button {
+    button {
       background-color: var(--card-color);
       color: var(--text-color);
       border: 1px solid var(--accent);
@@ -86,17 +82,29 @@
       cursor: pointer;
       transition: 0.2s;
     }
-    .main-controls button:hover,
-    .secondary-controls button:hover {
+    button:hover {
       background-color: var(--accent);
       color: #000;
     }
     main {
-      display: flex;
-      justify-content: space-between;
       padding: 40px;
+    }
+    .container-flex {
+      display: flex;
       gap: 40px;
       flex-wrap: wrap;
+    }
+    .checklist {
+      flex: 1;
+      min-width: 300px;
+    }
+    .relatorio {
+      flex: 1;
+      min-width: 300px;
+      background-color: var(--card-color);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
     }
     ul {
       list-style-type: decimal;
@@ -110,7 +118,6 @@
       padding: 20px;
       border-radius: 10px;
       font-size: 1.5em;
-      box-shadow: 0 4px 10px rgba(0, 255, 204, 0.1);
     }
     li label {
       display: flex;
@@ -119,13 +126,9 @@
       cursor: pointer;
       border-left: 5px solid var(--accent);
       padding-left: 10px;
-      transition: border-color 0.3s, color 0.3s;
     }
     li span {
       transition: color 0.3s ease, text-decoration 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     input[type="checkbox"] {
       transform: scale(1.5);
@@ -140,80 +143,32 @@
       content: " ✔️";
       font-size: 0.8em;
     }
-    .fade-in {
-      animation: fadeInSuccess 0.5s ease-out;
-      background-color: #00ffcc33 !important;
-    }
-    @keyframes fadeInSuccess {
-      0% { background-color: transparent; }
-      50% { background-color: #00ffcc55; }
-      100% { background-color: transparent; }
-    }
-    .relatorio {
-      max-width: 600px;
-      flex: 1;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: var(--card-color);
       color: var(--text-color);
     }
     th, td {
       border: 1px solid var(--accent);
-      padding: 10px;
+      padding: 8px;
       text-align: left;
     }
     th {
       background-color: var(--accent);
       color: black;
     }
-    .floating-menu {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 100;
-      flex-direction: column;
+    .historico {
+      background-color: var(--card-color);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      margin-top: 40px;
+    }
+    .filtros {
+      display: flex;
       gap: 10px;
-    }
-    .floating-menu button {
-      background-color: var(--accent);
-      color: #000;
-      border: none;
-      padding: 12px;
-      border-radius: 50%;
-      font-size: 1.2em;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    }
-    .floating-menu button:hover {
-      transform: scale(1.1);
-    }
-    @media (max-width: 768px) {
-      header {
-        padding: 20px;
-      }
-      .controls {
-        position: static;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-bottom: 10px;
-      }
-      .info {
-        position: static;
-        text-align: center;
-        margin-top: 10px;
-      }
-      main {
-        flex-direction: column;
-        padding: 20px;
-      }
-      .floating-menu {
-        display: flex;
-      }
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -236,18 +191,39 @@
   </header>
 
   <main>
-    <ul id="checklist">
-      <li><input type="checkbox" id="tarefa1" onclick="registrarConclusao(this)"><label for="tarefa1"><span>Verificar equipamentos do Data Center</span></label></li>
-      <li><input type="checkbox" id="tarefa2" onclick="registrarConclusao(this)"><label for="tarefa2"><span>Validar a disponibilidade dos canais de TV</span></label></li>
-      <li><input type="checkbox" id="tarefa3" onclick="registrarConclusao(this)"><label for="tarefa3"><span>Validar chamados em aberto</span></label></li>
-      <li><input type="checkbox" id="tarefa4" onclick="registrarConclusao(this)"><label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label></li>
-      <li><input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)"><label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label></li>
-      <li><input type="checkbox" id="tarefa6" onclick="registrarConclusao(this)"><label for="tarefa6"><span>Verificar TVs com Pix Media nas Áreas</span></label></li>
-    </ul>
+    <div class="container-flex">
+      <div class="checklist">
+        <ul id="checklist">
+          <li><input type="checkbox" id="tarefa1" onclick="registrarConclusao(this)"><label for="tarefa1"><span>Verificar equipamentos do Data Center</span></label></li>
+          <li><input type="checkbox" id="tarefa2" onclick="registrarConclusao(this)"><label for="tarefa2"><span>Validar a disponibilidade dos canais de TV</span></label></li>
+          <li><input type="checkbox" id="tarefa3" onclick="registrarConclusao(this)"><label for="tarefa3"><span>Validar chamados em aberto</span></label></li>
+          <li><input type="checkbox" id="tarefa4" onclick="registrarConclusao(this)"><label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label></li>
+          <li><input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)"><label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label></li>
+          <li><input type="checkbox" id="tarefa6" onclick="registrarConclusao(this)"><label for="tarefa6"><span>Verificar TVs com Pix Media nas Áreas</span></label></li>
+        </ul>
+      </div>
 
-    <div class="relatorio">
-      <h2>✅ Relatório de Conclusão</h2>
-      <table id="tabelaRelatorio">
+      <div class="relatorio">
+        <h2>✅ Relatório de Conclusão (Hoje)</h2>
+        <table id="tabelaRelatorio">
+          <thead>
+            <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="historico">
+      <h2>📜 Histórico de Relatórios</h2>
+      <div class="filtros">
+        <select id="filtroDia"><option value="">Dia</option></select>
+        <select id="filtroMes"><option value="">Mês</option></select>
+        <select id="filtroAno"><option value="">Ano</option></select>
+        <button onclick="aplicarFiltroHistorico()">Filtrar</button>
+        <button onclick="limparFiltroHistorico()">Limpar Filtros</button>
+      </div>
+      <table id="tabelaHistorico">
         <thead>
           <tr><th>Tarefa</th><th>Data e Hora</th></tr>
         </thead>
@@ -256,18 +232,17 @@
     </div>
   </main>
 
-  <div class="floating-menu">
-    <button onclick="alternarTema()">🌓</button>
-    <button onclick="resetarChecklist()">🔁</button>
-    <button onclick="resetarRelatorio()">🗑️</button>
-  </div>
-
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
   const SUPABASE_URL = "https://dpcmfkojothqxoaxgqxm.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4"; // substitua pela chave real
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function dataHojeBR() {
+    const hoje = new Date();
+    return hoje.toLocaleDateString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+  }
 
   function atualizarHora() {
     const data = new Date();
@@ -281,12 +256,7 @@
     try {
       const { error } = await supabase
         .from("relatorio_t.i")
-        .upsert({
-          id: 1,
-          checklist,
-          relatorio,
-          atualizado_em: new Date().toISOString()
-        })
+        .upsert({ id: 1, checklist, relatorio, atualizado_em: new Date().toISOString() })
         .select();
       if (error) throw error;
     } catch (err) {
@@ -303,10 +273,7 @@
         .eq("id", 1)
         .single();
       if (error || !data) throw error || new Error("Sem dados");
-      return {
-        checklist: data.checklist || [],
-        relatorio: data.relatorio || []
-      };
+      return { checklist: data.checklist || [], relatorio: data.relatorio || [] };
     } catch (err) {
       console.warn("Erro ao carregar do Supabase, usando localStorage:", err);
       return JSON.parse(localStorage.getItem("estadoChecklistTI")) || null;
@@ -318,9 +285,8 @@
       const span = li.querySelector("span");
       return { tarefa: span.textContent.replace(" ✔️", ""), marcado: li.querySelector("input").checked };
     });
-    const relatorio = [...document.querySelectorAll("#tabelaRelatorio tbody tr")].map(tr => ({
-      tarefa: tr.cells[0].textContent,
-      dataHora: tr.cells[1].textContent
+    const relatorio = [...document.querySelectorAll("#tabelaHistorico tbody tr")].map(tr => ({
+      tarefa: tr.cells[0].textContent, dataHora: tr.cells[1].textContent
     }));
     await salvarNoSupabase(checklist, relatorio);
   }
@@ -328,6 +294,7 @@
   async function carregarEstado() {
     const salvo = await carregarDoSupabase();
     if (salvo) {
+      document.querySelector("#tabelaRelatorio tbody").innerHTML = "";
       salvo.checklist.forEach(itemSalvo => {
         document.querySelectorAll("#checklist li").forEach(li => {
           const span = li.querySelector("span");
@@ -335,15 +302,18 @@
             const checkbox = li.querySelector("input");
             checkbox.checked = itemSalvo.marcado;
             span.classList.toggle("checked", itemSalvo.marcado);
+            if (itemSalvo.marcado) {
+              const dataHora = salvo.relatorio.find(r => r.tarefa === itemSalvo.tarefa)?.dataHora;
+              if (dataHora?.startsWith(dataHojeBR())) {
+                const row = document.querySelector("#tabelaRelatorio tbody").insertRow();
+                row.insertCell(0).textContent = itemSalvo.tarefa;
+                row.insertCell(1).textContent = dataHora;
+              }
+            }
           }
         });
       });
-      const tbody = document.querySelector("#tabelaRelatorio tbody");
-      salvo.relatorio.forEach(reg => {
-        const row = tbody.insertRow();
-        row.insertCell(0).textContent = reg.tarefa;
-        row.insertCell(1).textContent = reg.dataHora;
-      });
+      preencherFiltros(salvo.relatorio);
     }
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
@@ -352,16 +322,17 @@
   function registrarConclusao(checkbox) {
     const span = checkbox.parentElement.querySelector("span");
     const tarefa = span.textContent.replace(" ✔️", "");
-    const tabela = document.querySelector("#tabelaRelatorio tbody");
     span.classList.toggle("checked", checkbox.checked);
     if (checkbox.checked) {
-      const li = checkbox.closest("li");
-      li.classList.add("fade-in");
-      setTimeout(() => li.classList.remove("fade-in"), 500);
       const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
-      const novaLinha = tabela.insertRow(0);
-      novaLinha.insertCell(0).textContent = tarefa;
-      novaLinha.insertCell(1).textContent = horario;
+      if (horario.startsWith(dataHojeBR())) {
+        const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
+        novaLinhaHoje.insertCell(0).textContent = tarefa;
+        novaLinhaHoje.insertCell(1).textContent = horario;
+      }
+      const novaLinhaHist = document.querySelector("#tabelaHistorico tbody").insertRow(0);
+      novaLinhaHist.insertCell(0).textContent = tarefa;
+      novaLinhaHist.insertCell(1).textContent = horario;
     }
     salvarEstado();
   }
@@ -376,6 +347,7 @@
 
   function resetarRelatorio() {
     document.querySelector('#tabelaRelatorio tbody').innerHTML = "";
+    document.querySelector('#tabelaHistorico tbody').innerHTML = "";
     salvarEstado();
   }
 
@@ -385,7 +357,7 @@
   }
 
   async function carregarClima() {
-    const apiKey = 'f72b6474dc378f01668c752c37748576';
+    const apiKey = 'SUA_API_OPENWEATHER';
     const cidade = 'Olimpia,BR';
     try {
       const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${apiKey}`);
@@ -396,10 +368,49 @@
     }
   }
 
+  function preencherFiltros(dados) {
+    const anos = new Set(), meses = new Set(), dias = new Set();
+    dados.forEach(reg => {
+      const [dia, mes, ano] = reg.dataHora.split(" ")[0].split("/");
+      dias.add(dia); meses.add(mes); anos.add(ano);
+    });
+    document.getElementById("filtroDia").innerHTML = '<option value="">Dia</option>' + [...dias].sort().map(d => `<option>${d}</option>`).join("");
+    document.getElementById("filtroMes").innerHTML = '<option value="">Mês</option>' + [...meses].sort().map(m => `<option>${m}</option>`).join("");
+    document.getElementById("filtroAno").innerHTML = '<option value="">Ano</option>' + [...anos].sort().map(a => `<option>${a}</option>`).join("");
+  }
+
+  function aplicarFiltroHistorico() {
+    const dia = document.getElementById("filtroDia").value;
+    const mes = document.getElementById("filtroMes").value;
+    const ano = document.getElementById("filtroAno").value;
+    const tbody = document.querySelector("#tabelaHistorico tbody");
+    tbody.innerHTML = "";
+    carregarDoSupabase().then(salvo => {
+      if (!salvo) return;
+      salvo.relatorio.forEach(reg => {
+        const [d, m, a] = reg.dataHora.split(" ")[0].split("/");
+        if ((!dia || d === dia) && (!mes || m === mes) && (!ano || a === ano)) {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = reg.tarefa;
+          row.insertCell(1).textContent = reg.dataHora;
+        }
+      });
+    });
+  }
+
+  function limparFiltroHistorico() {
+    document.getElementById("filtroDia").value = "";
+    document.getElementById("filtroMes").value = "";
+    document.getElementById("filtroAno").value = "";
+    document.querySelector("#tabelaHistorico tbody").innerHTML = "";
+  }
+
   window.registrarConclusao = registrarConclusao;
   window.resetarChecklist = resetarChecklist;
   window.resetarRelatorio = resetarRelatorio;
   window.alternarTema = alternarTema;
+  window.aplicarFiltroHistorico = aplicarFiltroHistorico;
+  window.limparFiltroHistorico = limparFiltroHistorico;
 
   carregarEstado();
   carregarClima();
