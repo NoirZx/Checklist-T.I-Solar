@@ -11,12 +11,18 @@
       --card-color: #1e1e1e;
       --text-color: #e0e0e0;
       --accent: #00ffcc;
+      --scroll-track: #0f0f0f;
+      --scroll-thumb: #00ffcc33;
+      --scroll-thumb-hover: #00ffcc77;
     }
     body.light {
       --bg-color: #f0f0f0;
       --card-color: #ffffff;
       --text-color: #111111;
       --accent: #00796b;
+      --scroll-track: #e9e9e9;
+      --scroll-thumb: #00796b33;
+      --scroll-thumb-hover: #00796b77;
       background-image: none;
     }
     body {
@@ -104,6 +110,11 @@
       border-radius: 10px;
       border: 1px solid var(--accent);
     }
+
+    /* Tabelas */
+    table { width: 100%; border-collapse: collapse; color: var(--text-color); }
+    th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; }
+    th { background-color: var(--accent); color: black; }
     ul {
       list-style-type: decimal;
       padding-left: 20px;
@@ -134,10 +145,6 @@
     .checked { text-decoration: line-through; color: gray; }
     .checked::after { content: " ✔️"; font-size: 0.8em; }
 
-    table { width: 100%; border-collapse: collapse; color: var(--text-color); }
-    th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; }
-    th { background-color: var(--accent); color: black; }
-
     .historico {
       background-color: var(--card-color);
       padding: 20px;
@@ -151,6 +158,19 @@
       flex-wrap: wrap;
       margin-bottom: 10px;
     }
+
+    /* Contêiner com rolagem para as tabelas */
+    .table-wrap {
+      max-height: 320px;
+      overflow-y: auto;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+    }
+    .table-wrap table { border: none; }
+    .table-wrap::-webkit-scrollbar { width: 10px; }
+    .table-wrap::-webkit-scrollbar-track { background: var(--scroll-track); border-radius: 10px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
+    .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
 
     /* Sub-checklist Wi-Fi */
     .subwifi {
@@ -186,11 +206,7 @@
       color: var(--text-color);
       font-size: 0.95em;
     }
-    .hint {
-      margin-top: 8px;
-      font-size: 0.85em;
-      opacity: 0.8;
-    }
+    .hint { margin-top: 8px; font-size: 0.85em; opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -271,12 +287,14 @@
 
       <div class="relatorio">
         <h2>✅ Relatório de Conclusão (Hoje)</h2>
-        <table id="tabelaRelatorio">
-          <thead>
-            <tr><th>Tarefa</th><th>Data e Hora</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="table-wrap">
+          <table id="tabelaRelatorio">
+            <thead>
+              <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -289,12 +307,14 @@
         <button onclick="aplicarFiltroHistorico()">Filtrar</button>
         <button onclick="limparFiltroHistorico()">Limpar Filtros</button>
       </div>
-      <table id="tabelaHistorico">
-        <thead>
-          <tr><th>Tarefa</th><th>Data e Hora</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="tabelaHistorico">
+          <thead>
+            <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </main>
 
@@ -304,6 +324,9 @@
   const SUPABASE_URL = "https://dpcmfkojothqxoaxgqxm.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---- cache interno de histórico (agora não dependemos da tabela renderizada)
+  let relatorioCache = [];
 
   const WIFI_INPUT_IDS = [
     "wifi-recepcao","wifi-minigolf","wifi-sorveteria",
@@ -318,7 +341,8 @@
   function atualizarHora() {
     const data = new Date();
     const opcoes = { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-    document.getElementById('hora').textContent = `⏰ Horário de Brasília: ${new Intl.DateTimeFormat('pt-BR', opcoes).format(data)}`;
+    document.getElementById('hora').textContent =
+      `⏰ Horário de Brasília: ${new Intl.DateTimeFormat('pt-BR', opcoes).format(data)}`;
   }
   setInterval(atualizarHora, 1000);
   atualizarHora();
@@ -331,7 +355,7 @@
           id: 1,
           checklist,
           relatorio,
-          wifi, // guardamos também os valores dos testes de Wi-Fi
+          wifi,
           atualizado_em: new Date().toISOString()
         })
         .select();
@@ -380,6 +404,10 @@
     });
   }
 
+  function anyWifiPreenchido(vals) {
+    return Object.values(vals || {}).some(v => (v ?? "").toString().trim() !== "");
+  }
+
   function todosWifiPreenchidos() {
     return WIFI_INPUT_IDS.every(id => {
       const v = (document.getElementById(id).value || "").trim();
@@ -394,18 +422,31 @@
       const marcado = li.querySelector("input").checked;
       return { tarefa, marcado };
     });
-    const relatorio = [...document.querySelectorAll("#tabelaHistorico tbody tr")].map(tr => ({
-      tarefa: tr.cells[0].textContent, dataHora: tr.cells[1].textContent
-    }));
     const wifi = coletarValoresWifi();
-    await salvarNoSupabase(checklist, relatorio, wifi);
+    await salvarNoSupabase(checklist, relatorioCache, wifi);
+  }
+
+  function desenharRelatorioHoje() {
+    const corpo = document.querySelector("#tabelaRelatorio tbody");
+    corpo.innerHTML = "";
+    relatorioCache.forEach(reg => {
+      if ((reg.dataHora || "").startsWith(dataHojeBR())) {
+        const row = corpo.insertRow();
+        row.insertCell(0).textContent = reg.tarefa;
+        row.insertCell(1).textContent = reg.dataHora;
+      }
+    });
   }
 
   async function carregarEstado() {
     const salvo = await carregarDoSupabase();
+
+    // Limpa visuais
+    document.querySelector("#tabelaRelatorio tbody").innerHTML = "";
+    document.querySelector("#tabelaHistorico tbody").innerHTML = "";
+
     if (salvo) {
-      // Restaurar checklist marcado
-      document.querySelector("#tabelaRelatorio tbody").innerHTML = "";
+      // Restaurar checklist marcado (sem popular histórico aqui)
       salvo.checklist.forEach(itemSalvo => {
         document.querySelectorAll("#checklist li").forEach(li => {
           const span = li.querySelector("span");
@@ -413,49 +454,66 @@
             const checkbox = li.querySelector("input");
             checkbox.checked = itemSalvo.marcado;
             span.classList.toggle("checked", itemSalvo.marcado);
-            // Se for a tarefa de Wi-Fi, restaurar valores e mostrar bloco
-            if (li.id === "li-wifi") {
-              if (salvo.wifi) preencherValoresWifi(salvo.wifi);
-              document.getElementById("subwifi").style.display = "block"; // deixa visível ao carregar (facilita revisão)
-            }
-            // Preencher relatório de hoje (se já houver registro salvo de hoje)
-            if (itemSalvo.marcado) {
-              const dataHora = salvo.relatorio.find(r => r.tarefa === itemSalvo.tarefa)?.dataHora;
-              if (dataHora?.startsWith(dataHojeBR())) {
-                const row = document.querySelector("#tabelaRelatorio tbody").insertRow();
-                row.insertCell(0).textContent = itemSalvo.tarefa;
-                row.insertCell(1).textContent = dataHora;
-              }
-            }
           }
         });
       });
-      preencherFiltros(salvo.relatorio);
+
+      // Wi-Fi: preencher valores apenas se existirem; caso contrário, esconder bloco
+      if (salvo.wifi && anyWifiPreenchido(salvo.wifi)) {
+        preencherValoresWifi(salvo.wifi);
+        document.getElementById("subwifi").style.display = "block";
+      } else {
+        WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
+        document.getElementById("subwifi").style.display = "none";
+      }
+
+      // Atualiza cache e filtros; NÃO renderiza histórico agora
+      relatorioCache = Array.isArray(salvo.relatorio) ? salvo.relatorio.slice() : [];
+      preencherFiltros(relatorioCache);
+
+      // Renderiza apenas o Relatório de Hoje
+      desenharRelatorioHoje();
     }
+
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
 
-    // Listeners para validar Wi-Fi em tempo real e salvar
+    // Listeners para validar/auto-concluir Wi-Fi e salvar
     WIFI_INPUT_IDS.forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("input", () => {
-        // Se a tarefa estiver marcada e algum campo for apagado, desfaz a conclusão
-        const cb = document.getElementById("tarefa5");
-        if (cb.checked && !todosWifiPreenchidos()) {
-          cb.checked = false;
-          cb.parentElement.querySelector("span").classList.remove("checked");
-          // Não removemos linhas antigas do relatório para manter o histórico, como no restante do app
-        }
-        salvarEstado();
-      });
+      if (!el._listenerBound) {
+        el.addEventListener("input", () => {
+          const cb = document.getElementById("tarefa5");
+          const span = cb.parentElement.querySelector("span");
+
+          // Se estava marcado e alguém apagou algo -> desfaz
+          if (cb.checked && !todosWifiPreenchidos()) {
+            cb.checked = false;
+            span.classList.remove("checked");
+          }
+
+          // Se todos preenchidos e ainda não marcado -> concluir automaticamente e resetar
+          if (todosWifiPreenchidos() && !cb.checked) {
+            autoConcluirWifi();
+            return;
+          }
+
+          salvarEstado();
+        });
+        el._listenerBound = true;
+      }
     });
 
-    // Sempre mostrar o bloco ao clicar na linha da tarefa de Wi-Fi
-    document.getElementById("li-wifi").addEventListener("click", (e) => {
-      // Evita esconder/mostrar quando clicamos nos inputs
-      if (e.target.tagName.toLowerCase() === "input" && e.target.type === "number") return;
-      document.getElementById("subwifi").style.display = "block";
-    });
+    // Mostrar/ocultar bloco ao clicar no item Wi-Fi (mantido)
+    const liWifi = document.getElementById("li-wifi");
+    if (!liWifi._listenerBound) {
+      liWifi.addEventListener("click", (e) => {
+        if (e.target.tagName.toLowerCase() === "input" && e.target.type === "number") return;
+        const bloco = document.getElementById("subwifi");
+        bloco.style.display = bloco.style.display === "block" ? "none" : "block";
+      });
+      liWifi._listenerBound = true;
+    }
   }
 
   function registrarConclusao(checkbox) {
@@ -464,7 +522,6 @@
 
     // Caso especial: Wi-Fi
     if (checkbox.id === "tarefa5") {
-      // Sempre mostrar o bloco ao interagir
       document.getElementById("subwifi").style.display = "block";
 
       if (checkbox.checked) {
@@ -475,7 +532,6 @@
           salvarEstado();
           return;
         }
-        // Monta descrição com Mbps
         const mapa = {
           "wifi-recepcao": "Recepção",
           "wifi-minigolf": "Minigolf",
@@ -484,46 +540,83 @@
           "wifi-pizzaria": "Pizzaria",
           "wifi-pastelaria": "Pastelaria"
         };
-        const partes = WIFI_INPUT_IDS.map(id => `${mapa[id]} - ${document.getElementById(id).value.trim()} Mbps`);
+        const partes = WIFI_INPUT_IDS
+          .map(id => `${mapa[id]} - ${document.getElementById(id).value.trim()} Mbps`);
         const descricao = `Realizar testes de Wi-Fi em áreas comuns: ${partes.join(", ")}`;
 
-        // Relatório de hoje
         const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+
+        // Relatório de Hoje (visual)
         if (horario.startsWith(dataHojeBR())) {
           const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
           novaLinhaHoje.insertCell(0).textContent = descricao;
           novaLinhaHoje.insertCell(1).textContent = horario;
         }
-        // Histórico
-        const novaLinhaHist = document.querySelector("#tabelaHistorico tbody").insertRow(0);
-        novaLinhaHist.insertCell(0).textContent = descricao;
-        novaLinhaHist.insertCell(1).textContent = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
 
-        // Visual
+        // Atualiza o cache (histórico salvo) — mas NÃO renderiza na tabela histórica agora
+        relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
+
         span.classList.add("checked");
         salvarEstado();
         return;
       } else {
-        // Desmarcando: apenas tira visual e salva
         span.classList.remove("checked");
         salvarEstado();
         return;
       }
     }
 
-    // Fluxo padrão para demais tarefas
+    // Demais tarefas
     span.classList.toggle("checked", checkbox.checked);
     if (checkbox.checked) {
       const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+
       if (horario.startsWith(dataHojeBR())) {
         const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
         novaLinhaHoje.insertCell(0).textContent = tarefa;
         novaLinhaHoje.insertCell(1).textContent = horario;
       }
-      const novaLinhaHist = document.querySelector("#tabelaHistorico tbody").insertRow(0);
-      novaLinhaHist.insertCell(0).textContent = tarefa;
-      novaLinhaHist.insertCell(1).textContent = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+
+      // Atualiza cache (histórico salvo)
+      relatorioCache.unshift({ tarefa, dataHora: horario });
     }
+    salvarEstado();
+  }
+
+  // --- Auto-conclusão e reset do Wi-Fi ao preencher os 6 subtestes
+  function autoConcluirWifi() {
+    const cb = document.getElementById("tarefa5");
+    const span = cb.parentElement.querySelector("span");
+    const mapa = {
+      "wifi-recepcao": "Recepção",
+      "wifi-minigolf": "Minigolf",
+      "wifi-sorveteria": "Sorveteria",
+      "wifi-barpiscina": "Bar Piscina",
+      "wifi-pizzaria": "Pizzaria",
+      "wifi-pastelaria": "Pastelaria"
+    };
+    const partes = WIFI_INPUT_IDS
+      .map(id => `${mapa[id]} - ${document.getElementById(id).value.trim()} Mbps`);
+    const descricao = `Realizar testes de Wi-Fi em áreas comuns: ${partes.join(", ")}`;
+    const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
+
+    // Marca visualmente, registra no "Hoje" e no cache
+    cb.checked = true;
+    span.classList.add("checked");
+
+    if (horario.startsWith(dataHojeBR())) {
+      const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
+      novaLinhaHoje.insertCell(0).textContent = descricao;
+      novaLinhaHoje.insertCell(1).textContent = horario;
+    }
+    relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
+
+    // Reset imediato para o próximo checklist
+    WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
+    cb.checked = false;
+    span.classList.remove("checked");
+    document.getElementById("subwifi").style.display = "none";
+
     salvarEstado();
   }
 
@@ -532,7 +625,6 @@
       cb.checked = false;
       cb.parentElement.querySelector("span").classList.remove("checked");
     });
-    // Limpar campos Wi-Fi e esconder bloco
     WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
     document.getElementById("subwifi").style.display = "none";
     salvarEstado();
@@ -541,6 +633,7 @@
   function resetarRelatorio() {
     document.querySelector('#tabelaRelatorio tbody').innerHTML = "";
     document.querySelector('#tabelaHistorico tbody').innerHTML = "";
+    relatorioCache = []; // limpa histórico salvo
     salvarEstado();
   }
 
@@ -556,7 +649,8 @@
       const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${apiKey}`);
       const dados = await r.json();
       if (!dados?.main || !dados?.weather) throw new Error("Resposta inválida");
-      document.getElementById('clima').textContent = `🌡️ Olímpia-SP: ${Math.round(dados.main.temp)}°C, ${dados.weather[0].description}`;
+      document.getElementById('clima').textContent =
+        `🌡️ Olímpia-SP: ${Math.round(dados.main.temp)}°C, ${dados.weather[0].description}`;
     } catch {
       document.getElementById('clima').textContent = "Erro ao obter clima";
     }
@@ -565,30 +659,37 @@
   function preencherFiltros(dados) {
     const anos = new Set(), meses = new Set(), dias = new Set();
     dados.forEach(reg => {
-      const [dia, mes, ano] = reg.dataHora.split(" ")[0].split("/");
-      dias.add(dia); meses.add(mes); anos.add(ano);
+      const [dia, mes, ano] = (reg.dataHora || "").split(" ")[0].split("/");
+      if (dia && mes && ano) {
+        dias.add(dia); meses.add(mes); anos.add(ano);
+      }
     });
-    document.getElementById("filtroDia").innerHTML = '<option value="">Dia</option>' + [...dias].sort().map(d => `<option>${d}</option>`).join("");
-    document.getElementById("filtroMes").innerHTML = '<option value="">Mês</option>' + [...meses].sort().map(m => `<option>${m}</option>`).join("");
-    document.getElementById("filtroAno").innerHTML = '<option value="">Ano</option>' + [...anos].sort().map(a => `<option>${a}</option>`).join("");
+    document.getElementById("filtroDia").innerHTML =
+      '<option value="">Dia</option>' + [...dias].sort().map(d => `<option>${d}</option>`).join("");
+    document.getElementById("filtroMes").innerHTML =
+      '<option value="">Mês</option>' + [...meses].sort().map(m => `<option>${m}</option>`).join("");
+    document.getElementById("filtroAno").innerHTML =
+      '<option value="">Ano</option>' + [...anos].sort().map(a => `<option>${a}</option>`).join("");
   }
 
   function aplicarFiltroHistorico() {
     const dia = document.getElementById("filtroDia").value;
     const mes = document.getElementById("filtroMes").value;
     const ano = document.getElementById("filtroAno").value;
+
     const tbody = document.querySelector("#tabelaHistorico tbody");
     tbody.innerHTML = "";
-    carregarDoSupabase().then(salvo => {
-      if (!salvo) return;
-      salvo.relatorio.forEach(reg => {
-        const [d, m, a] = reg.dataHora.split(" ")[0].split("/");
-        if ((!dia || d === dia) && (!mes || m === mes) && (!ano || a === ano)) {
-          const row = tbody.insertRow();
-          row.insertCell(0).textContent = reg.tarefa;
-          row.insertCell(1).textContent = reg.dataHora;
-        }
-      });
+
+    // Exige pelo menos 1 filtro selecionado
+    if (!dia && !mes && !ano) return;
+
+    relatorioCache.forEach(reg => {
+      const [d, m, a] = (reg.dataHora || "").split(" ")[0].split("/");
+      if ((!dia || d === dia) && (!mes || m === mes) && (!ano || a === ano)) {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = reg.tarefa;
+        row.insertCell(1).textContent = reg.dataHora;
+      }
     });
   }
 
@@ -606,9 +707,22 @@
   window.aplicarFiltroHistorico = aplicarFiltroHistorico;
   window.limparFiltroHistorico = limparFiltroHistorico;
 
+  // Carregamento inicial
   carregarEstado();
   carregarClima();
   setInterval(carregarClima, 1800000);
+
+  // --- 🔴 Realtime: Atualização automática silenciosa ---
+  supabase
+    .channel('relatorio-ti-realtime')
+    .on('postgres_changes',
+        { event: '*', schema: 'relatorio_t', table: 'i' },
+        (_payload) => {
+          // Recarrega estado (mantém histórico oculto até filtrar)
+          carregarEstado();
+        }
+    )
+    .subscribe();
 </script>
 </body>
 </html>
