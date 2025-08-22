@@ -111,7 +111,6 @@
       border: 1px solid var(--accent);
     }
 
-    /* Tabelas */
     table { width: 100%; border-collapse: collapse; color: var(--text-color); }
     th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; }
     th { background-color: var(--accent); color: black; }
@@ -159,7 +158,6 @@
       margin-bottom: 10px;
     }
 
-    /* Contêiner com rolagem para as tabelas */
     .table-wrap {
       max-height: 320px;
       overflow-y: auto;
@@ -172,7 +170,6 @@
     .table-wrap::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; }
     .table-wrap::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
 
-    /* Sub-checklist Wi-Fi */
     .subwifi {
       margin-top: 14px;
       padding: 14px;
@@ -248,7 +245,6 @@
             <label for="tarefa4"><span>Validar as telas com banner do marketing na recepção</span></label>
           </li>
 
-          <!-- Tarefa Wi-Fi com sub-checklist -->
           <li id="li-wifi">
             <input type="checkbox" id="tarefa5" onclick="registrarConclusao(this)">
             <label for="tarefa5"><span>Realizar testes de Wi-Fi em áreas comuns</span></label>
@@ -325,7 +321,6 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwY21ma29qb3RocXhvYXhncXhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3NjA5NDMsImV4cCI6MjA3MDMzNjk0M30.ZLXoh8rNehb1We_qvlNvonuJohzYEno83OXjciJyTr4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ---- cache interno de histórico (agora não dependemos da tabela renderizada)
   let relatorioCache = [];
 
   const WIFI_INPUT_IDS = [
@@ -350,7 +345,7 @@
   async function salvarNoSupabase(checklist, relatorio, wifi) {
     try {
       const { error } = await supabase
-        .from("relatorio_t.i")
+        .from("relatorio_t")
         .upsert({
           id: 1,
           checklist,
@@ -369,7 +364,7 @@
   async function carregarDoSupabase() {
     try {
       const { data, error } = await supabase
-        .from("relatorio_t.i")
+        .from("relatorio_t")
         .select("*")
         .eq("id", 1)
         .single();
@@ -441,12 +436,10 @@
   async function carregarEstado() {
     const salvo = await carregarDoSupabase();
 
-    // Limpa visuais
     document.querySelector("#tabelaRelatorio tbody").innerHTML = "";
     document.querySelector("#tabelaHistorico tbody").innerHTML = "";
 
     if (salvo) {
-      // Restaurar checklist marcado (sem popular histórico aqui)
       salvo.checklist.forEach(itemSalvo => {
         document.querySelectorAll("#checklist li").forEach(li => {
           const span = li.querySelector("span");
@@ -458,7 +451,6 @@
         });
       });
 
-      // Wi-Fi: preencher valores apenas se existirem; caso contrário, esconder bloco
       if (salvo.wifi && anyWifiPreenchido(salvo.wifi)) {
         preencherValoresWifi(salvo.wifi);
         document.getElementById("subwifi").style.display = "block";
@@ -467,18 +459,15 @@
         document.getElementById("subwifi").style.display = "none";
       }
 
-      // Atualiza cache e filtros; NÃO renderiza histórico agora
       relatorioCache = Array.isArray(salvo.relatorio) ? salvo.relatorio.slice() : [];
       preencherFiltros(relatorioCache);
 
-      // Renderiza apenas o Relatório de Hoje
       desenharRelatorioHoje();
     }
 
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
 
-    // Listeners para validar/auto-concluir Wi-Fi e salvar
     WIFI_INPUT_IDS.forEach(id => {
       const el = document.getElementById(id);
       if (!el._listenerBound) {
@@ -486,13 +475,10 @@
           const cb = document.getElementById("tarefa5");
           const span = cb.parentElement.querySelector("span");
 
-          // Se estava marcado e alguém apagou algo -> desfaz
           if (cb.checked && !todosWifiPreenchidos()) {
             cb.checked = false;
             span.classList.remove("checked");
           }
-
-          // Se todos preenchidos e ainda não marcado -> concluir automaticamente e resetar
           if (todosWifiPreenchidos() && !cb.checked) {
             autoConcluirWifi();
             return;
@@ -504,7 +490,6 @@
       }
     });
 
-    // Mostrar/ocultar bloco ao clicar no item Wi-Fi (mantido)
     const liWifi = document.getElementById("li-wifi");
     if (!liWifi._listenerBound) {
       liWifi.addEventListener("click", (e) => {
@@ -520,7 +505,6 @@
     const span = checkbox.parentElement.querySelector("span");
     const tarefa = span.textContent.replace(" ✔️", "");
 
-    // Caso especial: Wi-Fi
     if (checkbox.id === "tarefa5") {
       document.getElementById("subwifi").style.display = "block";
 
@@ -546,14 +530,12 @@
 
         const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
 
-        // Relatório de Hoje (visual)
         if (horario.startsWith(dataHojeBR())) {
           const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
           novaLinhaHoje.insertCell(0).textContent = descricao;
           novaLinhaHoje.insertCell(1).textContent = horario;
         }
 
-        // Atualiza o cache (histórico salvo) — mas NÃO renderiza na tabela histórica agora
         relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
 
         span.classList.add("checked");
@@ -565,8 +547,6 @@
         return;
       }
     }
-
-    // Demais tarefas
     span.classList.toggle("checked", checkbox.checked);
     if (checkbox.checked) {
       const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
@@ -577,13 +557,11 @@
         novaLinhaHoje.insertCell(1).textContent = horario;
       }
 
-      // Atualiza cache (histórico salvo)
       relatorioCache.unshift({ tarefa, dataHora: horario });
     }
     salvarEstado();
   }
 
-  // --- Auto-conclusão e reset do Wi-Fi ao preencher os 6 subtestes
   function autoConcluirWifi() {
     const cb = document.getElementById("tarefa5");
     const span = cb.parentElement.querySelector("span");
@@ -600,7 +578,6 @@
     const descricao = `Realizar testes de Wi-Fi em áreas comuns: ${partes.join(", ")}`;
     const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
 
-    // Marca visualmente, registra no "Hoje" e no cache
     cb.checked = true;
     span.classList.add("checked");
 
@@ -611,7 +588,6 @@
     }
     relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
 
-    // Reset imediato para o próximo checklist
     WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
     cb.checked = false;
     span.classList.remove("checked");
@@ -633,7 +609,7 @@
   function resetarRelatorio() {
     document.querySelector('#tabelaRelatorio tbody').innerHTML = "";
     document.querySelector('#tabelaHistorico tbody').innerHTML = "";
-    relatorioCache = []; // limpa histórico salvo
+    relatorioCache = [];
     salvarEstado();
   }
 
@@ -643,7 +619,7 @@
   }
 
   async function carregarClima() {
-    const apiKey = 'f72b6474dc378f01668c752c37748576'; // <- Substitua pela sua chave real
+    const apiKey = 'f72b6474dc378f01668c752c37748576';
     const cidade = 'Olimpia,BR';
     try {
       const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${apiKey}`);
@@ -680,7 +656,6 @@
     const tbody = document.querySelector("#tabelaHistorico tbody");
     tbody.innerHTML = "";
 
-    // Exige pelo menos 1 filtro selecionado
     if (!dia && !mes && !ano) return;
 
     relatorioCache.forEach(reg => {
@@ -707,18 +682,15 @@
   window.aplicarFiltroHistorico = aplicarFiltroHistorico;
   window.limparFiltroHistorico = limparFiltroHistorico;
 
-  // Carregamento inicial
   carregarEstado();
   carregarClima();
   setInterval(carregarClima, 1800000);
 
-  // --- 🔴 Realtime: Atualização automática silenciosa ---
   supabase
     .channel('relatorio-ti-realtime')
     .on('postgres_changes',
         { event: '*', schema: 'relatorio_t', table: 'i' },
         (_payload) => {
-          // Recarrega estado (mantém histórico oculto até filtrar)
           carregarEstado();
         }
     )
