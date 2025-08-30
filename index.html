@@ -211,7 +211,6 @@
     <div class="controls">
       <div class="main-controls">
         <button onclick="alternarTema()">🌗 Alternar Tema</button>
-        <button onclick="resetarRelatorio()">🗑️ Limpar Relatório</button>
       </div>
       <div class="secondary-controls">
         <button onclick="resetarChecklist()">🔁 Resetar Checklist</button>
@@ -295,7 +294,11 @@
     </div>
 
     <div class="historico">
-      <h2>📜 Histórico de Relatórios</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>📜 Histórico de Relatórios</h2>
+    <button onclick="exportarPDF()">📄 Exportar PDF</button>
+  </div>
+
       <div class="filtros">
         <select id="filtroDia"><option value="">Dia</option></select>
         <select id="filtroMes"><option value="">Mês</option></select>
@@ -479,10 +482,6 @@
             cb.checked = false;
             span.classList.remove("checked");
           }
-          if (todosWifiPreenchidos() && !cb.checked) {
-            autoConcluirWifi();
-            return;
-          }
 
           salvarEstado();
         });
@@ -588,10 +587,6 @@
     }
     relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
 
-    WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
-    cb.checked = false;
-    span.classList.remove("checked");
-    document.getElementById("subwifi").style.display = "none";
 
     salvarEstado();
   }
@@ -669,32 +664,127 @@
   }
 
   function limparFiltroHistorico() {
-    document.getElementById("filtroDia").value = "";
-    document.getElementById("filtroMes").value = "";
-    document.getElementById("filtroAno").value = "";
-    document.querySelector("#tabelaHistorico tbody").innerHTML = "";
+  document.getElementById("filtroDia").value = "";
+  document.getElementById("filtroMes").value = "";
+  document.getElementById("filtroAno").value = "";
+  document.querySelector("#tabelaHistorico tbody").innerHTML = "";
+}
+
+// --- loader robusto para jsPDF (tenta import ESM e cai para <script>) ---
+let _jsPDFCtor = null;
+async function getJsPDF() {
+  if (_jsPDFCtor) return _jsPDFCtor;
+
+  // 1) tenta importar como módulo
+  try {
+    const mod = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+    _jsPDFCtor = mod.jsPDF || (mod.default && mod.default.jsPDF);
+  } catch (e) {
+    // ignora e tenta fallback
   }
 
-  window.registrarConclusao = registrarConclusao;
-  window.resetarChecklist = resetarChecklist;
-  window.resetarRelatorio = resetarRelatorio;
-  window.alternarTema = alternarTema;
-  window.aplicarFiltroHistorico = aplicarFiltroHistorico;
-  window.limparFiltroHistorico = limparFiltroHistorico;
+  // 2) fallback: injeta <script> UMD e usa window.jspdf
+  if (!_jsPDFCtor) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Falha ao carregar jsPDF via CDN"));
+      document.head.appendChild(s);
+    });
+    _jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+  }
+
+  if (!_jsPDFCtor) throw new Error("Não foi possível carregar o jsPDF.");
+  return _jsPDFCtor;
+}
+
+async function exportarPDF() {
+  try {
+    const jsPDF = await getJsPDF();
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+    const margin = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const colDataWidth = 55;                 // largura da coluna "Data e Hora"
+    const colTaskWidth = pageWidth - margin * 2 - colDataWidth;
+    const dataX = pageWidth - margin - colDataWidth + 2;
+
+    // Título
+    doc.setFontSize(16);
+    doc.text("Histórico de Relatórios - Checklist T.I Solar", margin, 15);
+
+    // Cabeçalho
+    doc.setFontSize(12);
+    doc.text("Tarefa", margin, 25);
+    doc.text("Data e Hora", dataX, 25);
+
+    // Conteúdo
+    let y = 33;
+    const linhaAlt = 6;
+
+    const dados = relatorioCache.length
+      ? relatorioCache
+      : [{ tarefa: "Nenhum relatório disponível.", dataHora: "" }];
+
+    dados.forEach((reg) => {
+      // quebra automática da descrição para caber na coluna
+      const linhasTarefa = doc.splitTextToSize(reg.tarefa, colTaskWidth);
+
+      // quebra de página se necessário
+      const blocoAltura = Math.max(linhasTarefa.length * linhaAlt, 10);
+      if (y + blocoAltura > pageHeight - margin) {
+        doc.addPage();
+        y = margin + 5;
+      }
+
+      // imprime a tarefa (pode ocupar várias linhas)
+      linhasTarefa.forEach((linha, i) => {
+        doc.text(linha, margin, y + i * linhaAlt);
+      });
+
+      // imprime a data/hora (uma linha)
+      doc.text(reg.dataHora || "", dataX, y);
+
+      y += blocoAltura;
+    });
+
+    doc.save("relatorio_checklist.pdf");
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível exportar o PDF. Verifique sua conexão e tente novamente.");
+  }
+}
+
+window.registrarConclusao = registrarConclusao;
+window.resetarChecklist = resetarChecklist;
+window.resetarRelatorio = resetarRelatorio;
+window.alternarTema = alternarTema;
+window.aplicarFiltroHistorico = aplicarFiltroHistorico;
+window.limparFiltroHistorico = limparFiltroHistorico;
+window.exportarPDF = exportarPDF;
+
 
   carregarEstado();
   carregarClima();
   setInterval(carregarClima, 1800000);
 
   supabase
-    .channel('relatorio-ti-realtime')
-    .on('postgres_changes',
-        { event: '*', schema: 'relatorio_t', table: 'i' },
-        (_payload) => {
-          carregarEstado();
+  .channel('relatorio-ti-realtime')
+  .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'relatorio_t' },
+      async (_payload) => {
+        const salvo = await carregarDoSupabase();
+        if (salvo) {
+          relatorioCache = Array.isArray(salvo.relatorio) ? salvo.relatorio.slice() : [];
+          preencherFiltros(relatorioCache);
+          desenharRelatorioHoje();
         }
-    )
-    .subscribe();
+      }
+  )
+  .subscribe();
+
 </script>
 </body>
 </html>
