@@ -63,6 +63,8 @@
       right: 40px;
       text-align: right;
       font-size: 1em;
+      display: grid;
+      gap: 6px;
     }
     .controls {
       position: absolute;
@@ -112,7 +114,7 @@
     }
 
     table { width: 100%; border-collapse: collapse; color: var(--text-color); }
-    th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; }
+    th, td { border: 1px solid var(--accent); padding: 8px; text-align: left; vertical-align: top; }
     th { background-color: var(--accent); color: black; }
     ul {
       list-style-type: decimal;
@@ -204,9 +206,114 @@
       font-size: 0.95em;
     }
     .hint { margin-top: 8px; font-size: 0.85em; opacity: 0.8; }
+
+    /* ===== Mobile-first ajustes ===== */
+    @media (max-width: 768px) {
+      header { padding: 16px; }
+
+      h1 {
+        font-size: 1.8em;
+        margin-top: 58px; /* abre espaço para barra fixa */
+      }
+
+      .controls {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 10px;
+        z-index: 10;
+        padding: 8px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      .main-controls, .secondary-controls {
+        flex: 1;
+        justify-content: space-between;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 0.95em;
+      }
+
+      .info {
+        position: static;
+        margin-top: 10px;
+        text-align: left;
+        font-size: 0.95em;
+        display: grid;
+        gap: 6px;
+      }
+
+      main { padding: 16px; }
+
+      .container-flex { flex-direction: column; gap: 16px; }
+
+      ul { padding-left: 18px; max-width: 100%; }
+
+      li { font-size: 1.05em; padding: 14px; margin-bottom: 12px; }
+
+      input[type="checkbox"] { transform: scale(1.3); }
+
+      .subwifi .grid { grid-template-columns: 1fr; }
+
+      .relatorio, .historico { padding: 14px; }
+
+      .table-wrap { max-height: 260px; }
+
+      .historico[data-collapsed="true"] .table-wrap,
+      .historico[data-collapsed="true"] .filtros { display: none; }
+    }
   </style>
 </head>
+
 <body>
+
+  <!-- Modal Operador -->
+  <div id="modalOperador" style="
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999; padding: 16px;">
+    <div style="
+      width: 100%; max-width: 420px;
+      background: var(--card-color);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px;">
+      <h2 style="margin:0 0 10px 0; color: var(--accent);">Identificação do Operador</h2>
+      <p style="margin:0 0 12px 0; opacity:0.9;">
+        Informe seu nome para registrar as conclusões no relatório.
+      </p>
+
+      <input id="inputOperador" type="text" placeholder="Ex.: João Silva" autocomplete="name"
+        style="
+          width:100%; padding: 12px 12px;
+          border-radius: 10px;
+          border: 1px solid var(--accent);
+          background: #00000033;
+          color: var(--text-color);
+          font-size: 1em;
+          outline: none;
+        ">
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button style="flex:1;" onclick="confirmarOperador()">Entrar</button>
+        <button style="flex:1;" onclick="trocarOperador()">Trocar</button>
+      </div>
+
+      <div style="margin-top:10px; font-size:0.9em; opacity:0.8;">
+        Dica: o nome fica salvo neste dispositivo.
+      </div>
+    </div>
+  </div>
+
   <header>
     <div class="controls">
       <div class="main-controls">
@@ -218,6 +325,7 @@
     </div>
     <h1>Checklist Diário T.I Solar</h1>
     <div class="info">
+      <span id="operador">👤 Operador: (não informado)</span>
       <span id="hora">⏰ Carregando hora...</span>
       <span id="clima">🌡️ Carregando clima...</span>
     </div>
@@ -285,7 +393,7 @@
         <div class="table-wrap">
           <table id="tabelaRelatorio">
             <thead>
-              <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+              <tr><th>Tarefa</th><th>Operador</th><th>Data e Hora</th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -294,10 +402,13 @@
     </div>
 
     <div class="historico">
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <h2>📜 Histórico de Relatórios</h2>
-    <button onclick="exportarPDF()">📄 Exportar PDF</button>
-  </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <h2 style="margin:0;">📜 Histórico de Relatórios</h2>
+        <div style="display:flex; gap:10px; flex-wrap: wrap;">
+          <button onclick="toggleHistorico()">Mostrar/Ocultar</button>
+          <button onclick="exportarPDF()">📄 Exportar PDF</button>
+        </div>
+      </div>
 
       <div class="filtros">
         <select id="filtroDia"><option value="">Dia</option></select>
@@ -306,10 +417,11 @@
         <button onclick="aplicarFiltroHistorico()">Filtrar</button>
         <button onclick="limparFiltroHistorico()">Limpar Filtros</button>
       </div>
+
       <div class="table-wrap">
         <table id="tabelaHistorico">
           <thead>
-            <tr><th>Tarefa</th><th>Data e Hora</th></tr>
+            <tr><th>Tarefa</th><th>Operador</th><th>Data e Hora</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -325,11 +437,54 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let relatorioCache = [];
+  let operadorAtual = "";
 
   const WIFI_INPUT_IDS = [
     "wifi-recepcao","wifi-minigolf","wifi-sorveteria",
     "wifi-barpiscina","wifi-pizzaria","wifi-pastelaria"
   ];
+
+  function getOperador() {
+    return (localStorage.getItem("operadorTI") || "").trim();
+  }
+
+  function setOperador(nome) {
+    operadorAtual = (nome || "").trim();
+    localStorage.setItem("operadorTI", operadorAtual);
+    const el = document.getElementById("operador");
+    if (el) el.textContent = `👤 Operador: ${operadorAtual || "(não informado)"}`;
+  }
+
+  function abrirModalOperador(force=false) {
+    const nome = getOperador();
+    if (!force && nome) {
+      setOperador(nome);
+      return;
+    }
+    const modal = document.getElementById("modalOperador");
+    modal.style.display = "flex";
+    const input = document.getElementById("inputOperador");
+    input.value = force ? "" : nome;
+    setTimeout(() => input.focus(), 50);
+  }
+
+  window.confirmarOperador = function() {
+    const nome = document.getElementById("inputOperador").value.trim();
+    if (!nome) { alert("Informe o nome do operador."); return; }
+    setOperador(nome);
+    document.getElementById("modalOperador").style.display = "none";
+    salvarEstado();
+  };
+
+  window.trocarOperador = function() {
+    abrirModalOperador(true);
+  };
+
+  window.toggleHistorico = function() {
+    const box = document.querySelector(".historico");
+    const v = box.getAttribute("data-collapsed") === "true";
+    box.setAttribute("data-collapsed", v ? "false" : "true");
+  };
 
   function dataHojeBR() {
     const hoje = new Date();
@@ -345,7 +500,7 @@
   setInterval(atualizarHora, 1000);
   atualizarHora();
 
-  async function salvarNoSupabase(checklist, relatorio, wifi) {
+  async function salvarNoSupabase(checklist, relatorio, wifi, operador) {
     try {
       const { error } = await supabase
         .from("relatorio_t")
@@ -354,13 +509,14 @@
           checklist,
           relatorio,
           wifi,
+          operador,
           atualizado_em: new Date().toISOString()
         })
         .select();
       if (error) throw error;
     } catch (err) {
       console.warn("Erro ao salvar no Supabase, fallback localStorage:", err);
-      localStorage.setItem("estadoChecklistTI", JSON.stringify({ checklist, relatorio, wifi }));
+      localStorage.setItem("estadoChecklistTI", JSON.stringify({ checklist, relatorio, wifi, operador }));
     }
   }
 
@@ -375,7 +531,8 @@
       return {
         checklist: data.checklist || [],
         relatorio: data.relatorio || [],
-        wifi: data.wifi || null
+        wifi: data.wifi || null,
+        operador: data.operador || ""
       };
     } catch (err) {
       console.warn("Erro ao carregar do Supabase, usando localStorage:", err);
@@ -416,12 +573,14 @@
   async function salvarEstado() {
     const checklist = [...document.querySelectorAll("#checklist li")].map(li => {
       const span = li.querySelector("span");
-      const tarefa = span.textContent.replace(" ✔️", "");
-      const marcado = li.querySelector("input").checked;
-      return { tarefa, marcado };
+      const checkbox = li.querySelector('input[type="checkbox"]');
+      const tarefa = (span?.textContent || "").replace(" ✔️", "");
+      const marcado = checkbox?.checked || false;
+      return { id: checkbox?.id || "", tarefa, marcado };
     });
     const wifi = coletarValoresWifi();
-    await salvarNoSupabase(checklist, relatorioCache, wifi);
+    const operador = getOperador() || operadorAtual || "";
+    await salvarNoSupabase(checklist, relatorioCache, wifi, operador);
   }
 
   function desenharRelatorioHoje() {
@@ -431,8 +590,35 @@
       if ((reg.dataHora || "").startsWith(dataHojeBR())) {
         const row = corpo.insertRow();
         row.insertCell(0).textContent = reg.tarefa;
-        row.insertCell(1).textContent = reg.dataHora;
+        row.insertCell(1).textContent = reg.operador || "";
+        row.insertCell(2).textContent = reg.dataHora;
       }
+    });
+  }
+
+  function aplicarChecklistSalvo(salvoChecklist) {
+    if (!Array.isArray(salvoChecklist)) return;
+
+    salvoChecklist.forEach(itemSalvo => {
+      // novo formato: id
+      if (itemSalvo?.id) {
+        const cb = document.getElementById(itemSalvo.id);
+        if (cb) {
+          cb.checked = !!itemSalvo.marcado;
+          const sp = cb.parentElement?.querySelector("span");
+          if (sp) sp.classList.toggle("checked", !!itemSalvo.marcado);
+          return;
+        }
+      }
+      // fallback: formato antigo por texto (aproximação)
+      document.querySelectorAll("#checklist li").forEach(li => {
+        const span = li.querySelector("span");
+        if (span && itemSalvo?.tarefa && span.textContent.includes(itemSalvo.tarefa)) {
+          const checkbox = li.querySelector('input[type="checkbox"]');
+          checkbox.checked = !!itemSalvo.marcado;
+          span.classList.toggle("checked", !!itemSalvo.marcado);
+        }
+      });
     });
   }
 
@@ -443,16 +629,12 @@
     document.querySelector("#tabelaHistorico tbody").innerHTML = "";
 
     if (salvo) {
-      salvo.checklist.forEach(itemSalvo => {
-        document.querySelectorAll("#checklist li").forEach(li => {
-          const span = li.querySelector("span");
-          if (span.textContent.includes(itemSalvo.tarefa)) {
-            const checkbox = li.querySelector("input");
-            checkbox.checked = itemSalvo.marcado;
-            span.classList.toggle("checked", itemSalvo.marcado);
-          }
-        });
-      });
+      // operador (prioriza localStorage do dispositivo, mas aceita remoto se existir e não houver local)
+      const localOp = getOperador();
+      if (localOp) setOperador(localOp);
+      else if (salvo.operador) setOperador(salvo.operador);
+
+      aplicarChecklistSalvo(salvo.checklist);
 
       if (salvo.wifi && anyWifiPreenchido(salvo.wifi)) {
         preencherValoresWifi(salvo.wifi);
@@ -468,9 +650,16 @@
       desenharRelatorioHoje();
     }
 
+    // tema
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
 
+    // histórico colapsado no mobile
+    if (window.matchMedia("(max-width: 768px)").matches) {
+      document.querySelector(".historico").setAttribute("data-collapsed", "true");
+    }
+
+    // listeners de wifi: validação + auto concluir quando completo
     WIFI_INPUT_IDS.forEach(id => {
       const el = document.getElementById(id);
       if (!el._listenerBound) {
@@ -483,26 +672,46 @@
             span.classList.remove("checked");
           }
 
+          if (!cb.checked && todosWifiPreenchidos()) {
+            autoConcluirWifi();
+            return; // autoConcluirWifi já salva
+          }
+
           salvarEstado();
         });
         el._listenerBound = true;
       }
     });
 
+    // toggle do bloco wifi: não interfere com checkbox/label
     const liWifi = document.getElementById("li-wifi");
     if (!liWifi._listenerBound) {
       liWifi.addEventListener("click", (e) => {
-        if (e.target.tagName.toLowerCase() === "input" && e.target.type === "number") return;
+        const tag = e.target.tagName.toLowerCase();
+        if (tag === "input") return;
+        if (tag === "label" || e.target.closest("label")) return;
+
         const bloco = document.getElementById("subwifi");
         bloco.style.display = bloco.style.display === "block" ? "none" : "block";
       });
       liWifi._listenerBound = true;
     }
+
+    // se não tiver operador, pede
+    if (!getOperador()) abrirModalOperador(false);
   }
 
   function registrarConclusao(checkbox) {
+    if (!getOperador()) {
+      // força identificar antes de registrar
+      checkbox.checked = false;
+      abrirModalOperador(true);
+      return;
+    }
+
     const span = checkbox.parentElement.querySelector("span");
     const tarefa = span.textContent.replace(" ✔️", "");
+    const operador = getOperador() || operadorAtual || "";
 
     if (checkbox.id === "tarefa5") {
       document.getElementById("subwifi").style.display = "block";
@@ -532,10 +741,11 @@
         if (horario.startsWith(dataHojeBR())) {
           const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
           novaLinhaHoje.insertCell(0).textContent = descricao;
-          novaLinhaHoje.insertCell(1).textContent = horario;
+          novaLinhaHoje.insertCell(1).textContent = operador;
+          novaLinhaHoje.insertCell(2).textContent = horario;
         }
 
-        relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
+        relatorioCache.unshift({ tarefa: descricao, operador, dataHora: horario });
 
         span.classList.add("checked");
         salvarEstado();
@@ -546,24 +756,35 @@
         return;
       }
     }
+
     span.classList.toggle("checked", checkbox.checked);
+
     if (checkbox.checked) {
       const horario = new Date().toLocaleString("pt-BR", { timeZone: 'America/Sao_Paulo' });
 
       if (horario.startsWith(dataHojeBR())) {
         const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
         novaLinhaHoje.insertCell(0).textContent = tarefa;
-        novaLinhaHoje.insertCell(1).textContent = horario;
+        novaLinhaHoje.insertCell(1).textContent = operador;
+        novaLinhaHoje.insertCell(2).textContent = horario;
       }
 
-      relatorioCache.unshift({ tarefa, dataHora: horario });
+      relatorioCache.unshift({ tarefa, operador, dataHora: horario });
     }
+
     salvarEstado();
   }
 
   function autoConcluirWifi() {
+    if (!getOperador()) {
+      abrirModalOperador(true);
+      return;
+    }
+
     const cb = document.getElementById("tarefa5");
     const span = cb.parentElement.querySelector("span");
+    const operador = getOperador() || operadorAtual || "";
+
     const mapa = {
       "wifi-recepcao": "Recepção",
       "wifi-minigolf": "Minigolf",
@@ -583,11 +804,11 @@
     if (horario.startsWith(dataHojeBR())) {
       const novaLinhaHoje = document.querySelector("#tabelaRelatorio tbody").insertRow(0);
       novaLinhaHoje.insertCell(0).textContent = descricao;
-      novaLinhaHoje.insertCell(1).textContent = horario;
+      novaLinhaHoje.insertCell(1).textContent = operador;
+      novaLinhaHoje.insertCell(2).textContent = horario;
     }
-    relatorioCache.unshift({ tarefa: descricao, dataHora: horario });
 
-
+    relatorioCache.unshift({ tarefa: descricao, operador, dataHora: horario });
     salvarEstado();
   }
 
@@ -658,121 +879,133 @@
       if ((!dia || d === dia) && (!mes || m === mes) && (!ano || a === ano)) {
         const row = tbody.insertRow();
         row.insertCell(0).textContent = reg.tarefa;
-        row.insertCell(1).textContent = reg.dataHora;
+        row.insertCell(1).textContent = reg.operador || "";
+        row.insertCell(2).textContent = reg.dataHora;
       }
     });
   }
 
   function limparFiltroHistorico() {
-  document.getElementById("filtroDia").value = "";
-  document.getElementById("filtroMes").value = "";
-  document.getElementById("filtroAno").value = "";
-  document.querySelector("#tabelaHistorico tbody").innerHTML = "";
-}
-
-// --- loader robusto para jsPDF (tenta import ESM e cai para <script>) ---
-let _jsPDFCtor = null;
-async function getJsPDF() {
-  if (_jsPDFCtor) return _jsPDFCtor;
-
-  // 1) tenta importar como módulo
-  try {
-    const mod = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-    _jsPDFCtor = mod.jsPDF || (mod.default && mod.default.jsPDF);
-  } catch (e) {
-    // ignora e tenta fallback
+    document.getElementById("filtroDia").value = "";
+    document.getElementById("filtroMes").value = "";
+    document.getElementById("filtroAno").value = "";
+    document.querySelector("#tabelaHistorico tbody").innerHTML = "";
   }
 
-  // 2) fallback: injeta <script> UMD e usa window.jspdf
-  if (!_jsPDFCtor) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("Falha ao carregar jsPDF via CDN"));
-      document.head.appendChild(s);
-    });
-    _jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+  // --- loader robusto para jsPDF (tenta import ESM e cai para <script>) ---
+  let _jsPDFCtor = null;
+  async function getJsPDF() {
+    if (_jsPDFCtor) return _jsPDFCtor;
+
+    // 1) tenta importar como módulo
+    try {
+      const mod = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+      _jsPDFCtor = mod.jsPDF || (mod.default && mod.default.jsPDF);
+    } catch (e) {
+      // ignora e tenta fallback
+    }
+
+    // 2) fallback: injeta <script> UMD e usa window.jspdf
+    if (!_jsPDFCtor) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        s.onload = resolve;
+        s.onerror = () => reject(new Error("Falha ao carregar jsPDF via CDN"));
+        document.head.appendChild(s);
+      });
+      _jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    }
+
+    if (!_jsPDFCtor) throw new Error("Não foi possível carregar o jsPDF.");
+    return _jsPDFCtor;
   }
 
-  if (!_jsPDFCtor) throw new Error("Não foi possível carregar o jsPDF.");
-  return _jsPDFCtor;
-}
+  async function exportarPDF() {
+    try {
+      const jsPDF = await getJsPDF();
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-async function exportarPDF() {
-  try {
-    const jsPDF = await getJsPDF();
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const margin = 10;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-    const margin = 10;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const colDataWidth = 55;                 // largura da coluna "Data e Hora"
-    const colTaskWidth = pageWidth - margin * 2 - colDataWidth;
-    const dataX = pageWidth - margin - colDataWidth + 2;
+      // colunas: tarefa | operador | data/hora
+      const colDataWidth = 50;
+      const colOperWidth = 35;
+      const colTaskWidth = pageWidth - margin * 2 - colDataWidth - colOperWidth;
 
-    // Título
-    doc.setFontSize(16);
-    doc.text("Histórico de Relatórios - Checklist T.I Solar", margin, 15);
+      const xTask = margin;
+      const xOper = margin + colTaskWidth + 2;
+      const xData = margin + colTaskWidth + colOperWidth + 2;
 
-    // Cabeçalho
-    doc.setFontSize(12);
-    doc.text("Tarefa", margin, 25);
-    doc.text("Data e Hora", dataX, 25);
+      function desenharCabecalho() {
+        doc.setFontSize(16);
+        doc.text("Histórico de Relatórios - Checklist T.I Solar", margin, 15);
 
-    // Conteúdo
-    let y = 33;
-    const linhaAlt = 6;
-
-    const dados = relatorioCache.length
-      ? relatorioCache
-      : [{ tarefa: "Nenhum relatório disponível.", dataHora: "" }];
-
-    dados.forEach((reg) => {
-      // quebra automática da descrição para caber na coluna
-      const linhasTarefa = doc.splitTextToSize(reg.tarefa, colTaskWidth);
-
-      // quebra de página se necessário
-      const blocoAltura = Math.max(linhasTarefa.length * linhaAlt, 10);
-      if (y + blocoAltura > pageHeight - margin) {
-        doc.addPage();
-        y = margin + 5;
+        doc.setFontSize(12);
+        doc.text("Tarefa", xTask, 25);
+        doc.text("Operador", xOper, 25);
+        doc.text("Data e Hora", xData, 25);
       }
 
-      // imprime a tarefa (pode ocupar várias linhas)
-      linhasTarefa.forEach((linha, i) => {
-        doc.text(linha, margin, y + i * linhaAlt);
+      desenharCabecalho();
+
+      let y = 33;
+      const linhaAlt = 6;
+
+      const dados = relatorioCache.length
+        ? relatorioCache
+        : [{ tarefa: "Nenhum relatório disponível.", operador: "", dataHora: "" }];
+
+      dados.forEach((reg) => {
+        const tarefaTxt = reg.tarefa || "";
+        const operTxt = reg.operador || "";
+        const dataTxt = reg.dataHora || "";
+
+        const linhasTarefa = doc.splitTextToSize(tarefaTxt, colTaskWidth);
+        const linhasOper = doc.splitTextToSize(operTxt, colOperWidth);
+
+        const linhasBloco = Math.max(linhasTarefa.length, linhasOper.length, 1);
+        const blocoAltura = Math.max(linhasBloco * linhaAlt, 10);
+
+        if (y + blocoAltura > pageHeight - margin) {
+          doc.addPage();
+          desenharCabecalho();
+          y = 33;
+        }
+
+        linhasTarefa.forEach((linha, i) => doc.text(linha, xTask, y + i * linhaAlt));
+        linhasOper.forEach((linha, i) => doc.text(linha, xOper, y + i * linhaAlt));
+        doc.text(dataTxt, xData, y);
+
+        y += blocoAltura;
       });
 
-      // imprime a data/hora (uma linha)
-      doc.text(reg.dataHora || "", dataX, y);
-
-      y += blocoAltura;
-    });
-
-    doc.save("relatorio_checklist.pdf");
-  } catch (err) {
-    console.error(err);
-    alert("Não foi possível exportar o PDF. Verifique sua conexão e tente novamente.");
+      doc.save("relatorio_checklist.pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível exportar o PDF. Verifique sua conexão e tente novamente.");
+    }
   }
-}
 
-window.registrarConclusao = registrarConclusao;
-window.resetarChecklist = resetarChecklist;
-window.resetarRelatorio = resetarRelatorio;
-window.alternarTema = alternarTema;
-window.aplicarFiltroHistorico = aplicarFiltroHistorico;
-window.limparFiltroHistorico = limparFiltroHistorico;
-window.exportarPDF = exportarPDF;
+  window.registrarConclusao = registrarConclusao;
+  window.resetarChecklist = resetarChecklist;
+  window.resetarRelatorio = resetarRelatorio;
+  window.alternarTema = alternarTema;
+  window.aplicarFiltroHistorico = aplicarFiltroHistorico;
+  window.limparFiltroHistorico = limparFiltroHistorico;
+  window.exportarPDF = exportarPDF;
 
-
+  // init
   carregarEstado();
   carregarClima();
   setInterval(carregarClima, 1800000);
 
+  // realtime
   supabase
-  .channel('relatorio-ti-realtime')
-  .on('postgres_changes',
+    .channel('relatorio-ti-realtime')
+    .on('postgres_changes',
       { event: '*', schema: 'public', table: 'relatorio_t' },
       async (_payload) => {
         const salvo = await carregarDoSupabase();
@@ -780,10 +1013,13 @@ window.exportarPDF = exportarPDF;
           relatorioCache = Array.isArray(salvo.relatorio) ? salvo.relatorio.slice() : [];
           preencherFiltros(relatorioCache);
           desenharRelatorioHoje();
+
+          // se vier operador remoto e não houver local, aplica
+          if (!getOperador() && salvo.operador) setOperador(salvo.operador);
         }
       }
-  )
-  .subscribe();
+    )
+    .subscribe();
 
 </script>
 </body>
