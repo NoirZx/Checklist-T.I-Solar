@@ -269,6 +269,8 @@
 
       .historico[data-collapsed="true"] .table-wrap,
       .historico[data-collapsed="true"] .filtros { display: none; }
+
+      #graficoWifi { height: 240px !important; }
     }
   </style>
 </head>
@@ -397,6 +399,21 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+
+        <!-- =========================
+             GRÁFICO WIFI (Hoje)
+             ========================= -->
+        <div style="margin-top: 16px;">
+          <h3 style="margin: 0 0 10px 0;">📶 Wi-Fi (Hoje) — Manhã x Tarde</h3>
+
+          <div style="font-size: 0.9em; opacity: 0.85; margin-bottom: 8px;">
+            Manhã: 06:00–11:59 | Tarde: 12:00–18:00
+          </div>
+
+          <div style="background: rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px;">
+            <canvas id="graficoWifi" width="900" height="280" style="width: 100%; height: 280px;"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -622,6 +639,210 @@
     });
   }
 
+  // =========================
+  // GRÁFICO WIFI (Canvas puro)
+  // =========================
+  const WIFI_AREAS = ["Recepção","Minigolf","Sorveteria","Bar Piscina","Pizzaria","Pastelaria"];
+
+  function parseHoraBR(dataHoraStr) {
+    // dataHoraStr típico: "25/01/2026 14:33:21"
+    if (!dataHoraStr) return null;
+    const parts = dataHoraStr.split(" ");
+    if (parts.length < 2) return null;
+    const hora = parts[1].split(":");
+    if (hora.length < 2) return null;
+    const h = Number(hora[0]);
+    const m = Number(hora[1]);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return { h, m };
+  }
+
+  function isHojeBR(dataHoraStr) {
+    return (dataHoraStr || "").startsWith(dataHojeBR());
+  }
+
+  function periodoDia(dataHoraStr) {
+    const t = parseHoraBR(dataHoraStr);
+    if (!t) return null;
+    const minutos = t.h * 60 + t.m;
+
+    // Manhã: 06:00–11:59
+    if (minutos >= 360 && minutos <= 719) return "manha";
+
+    // Tarde: 12:00–18:00
+    if (minutos >= 720 && minutos <= 1080) return "tarde";
+
+    return null;
+  }
+
+  function extrairMbpsWifi(descricao) {
+    // "Realizar testes de Wi-Fi em áreas comuns: Recepção - 12 Mbps, ..."
+    if (!descricao) return null;
+
+    const out = {};
+    WIFI_AREAS.forEach(area => {
+      const re = new RegExp(area.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*-\\s*(\\d+(?:[\\.,]\\d+)?)\\s*Mbps", "i");
+      const m = descricao.match(re);
+      if (m && m[1] != null) {
+        const v = Number(String(m[1]).replace(",", "."));
+        if (!Number.isNaN(v)) out[area] = v;
+      }
+    });
+
+    return out;
+  }
+
+  function consolidarWifiHoje(relatorio) {
+    // pega o registro mais recente de cada período (manhã/tarde)
+    let manha = null;
+    let tarde = null;
+
+    for (const reg of relatorio) {
+      if (!reg || !isHojeBR(reg.dataHora)) continue;
+      if (!String(reg.tarefa || "").toLowerCase().includes("realizar testes de wi-fi")) continue;
+
+      const p = periodoDia(reg.dataHora);
+      if (!p) continue;
+
+      const valores = extrairMbpsWifi(reg.tarefa);
+      if (!valores) continue;
+
+      if (p === "manha" && !manha) manha = { valores, dataHora: reg.dataHora };
+      if (p === "tarde" && !tarde) tarde = { valores, dataHora: reg.dataHora };
+
+      if (manha && tarde) break;
+    }
+
+    return { manha, tarde };
+  }
+
+  function desenharGraficoWifi() {
+    const canvas = document.getElementById("graficoWifi");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const { manha, tarde } = consolidarWifiHoje(relatorioCache);
+
+    const padding = { left: 55, right: 20, top: 16, bottom: 40 };
+    const w = canvas.width;
+    const h = canvas.height;
+    const plotW = w - padding.left - padding.right;
+    const plotH = h - padding.top - padding.bottom;
+
+    const yMin = 0;
+    const yMax = 20;
+
+    function yToPx(v) {
+      const clamped = Math.max(yMin, Math.min(yMax, v));
+      const t = (clamped - yMin) / (yMax - yMin);
+      return padding.top + (plotH * (1 - t));
+    }
+
+    function xToPx(i) {
+      const step = plotW / (WIFI_AREAS.length - 1);
+      return padding.left + i * step;
+    }
+
+    const corManha = "#00ffcc";
+    const corTarde = "#ffcc00";
+
+    // grade + eixos
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = "12px Arial";
+
+    const ticks = [1, 5, 10, 15, 20];
+    ticks.forEach(tv => {
+      const y = yToPx(tv);
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(w - padding.right, y);
+      ctx.stroke();
+      ctx.fillText(String(tv), 10, y + 4);
+    });
+
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(padding.left, yToPx(0));
+    ctx.lineTo(w - padding.right, yToPx(0));
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    WIFI_AREAS.forEach((label, i) => {
+      const x = xToPx(i);
+      ctx.save();
+      ctx.translate(x, h - 16);
+      ctx.rotate(-Math.PI / 8);
+      ctx.fillText(label, -20, 0);
+      ctx.restore();
+    });
+
+    ctx.restore();
+
+    function drawSeries(valoresMap, cor) {
+      const pts = WIFI_AREAS.map((area, i) => {
+        const v = valoresMap && valoresMap[area] != null ? Number(valoresMap[area]) : null;
+        if (v == null || Number.isNaN(v)) return null;
+        return { x: xToPx(i), y: yToPx(v), v };
+      });
+
+      ctx.save();
+      ctx.strokeStyle = cor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      let started = false;
+      pts.forEach(p => {
+        if (!p) return;
+        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = cor;
+      pts.forEach(p => {
+        if (!p) return;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    if (manha) drawSeries(manha.valores, corManha);
+    if (tarde) drawSeries(tarde.valores, corTarde);
+
+    // legenda
+    ctx.save();
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+
+    function legendaItem(x, y, cor, texto) {
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, y - 10, 18, 4);
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fillText(texto, x + 24, y - 6);
+    }
+
+    const legY = 16;
+    legendaItem(padding.left, legY, corManha, manha ? `Manhã (${manha.dataHora.split(" ")[1]})` : "Manhã (sem registro)");
+    legendaItem(padding.left + 250, legY, corTarde, tarde ? `Tarde (${tarde.dataHora.split(" ")[1]})` : "Tarde (sem registro)");
+
+    ctx.restore();
+
+    if (!manha && !tarde) {
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.font = "14px Arial";
+      ctx.fillText("Nenhum teste de Wi-Fi registrado hoje (06:00–18:00).", padding.left, padding.top + 40);
+      ctx.restore();
+    }
+  }
+
   async function carregarEstado() {
     const salvo = await carregarDoSupabase();
 
@@ -629,7 +850,6 @@
     document.querySelector("#tabelaHistorico tbody").innerHTML = "";
 
     if (salvo) {
-      // operador (prioriza localStorage do dispositivo, mas aceita remoto se existir e não houver local)
       const localOp = getOperador();
       if (localOp) setOperador(localOp);
       else if (salvo.operador) setOperador(salvo.operador);
@@ -648,18 +868,18 @@
       preencherFiltros(relatorioCache);
 
       desenharRelatorioHoje();
+      desenharGraficoWifi();
+    } else {
+      desenharGraficoWifi();
     }
 
-    // tema
     const temaClaro = localStorage.getItem('temaClaro') === 'true';
     if (temaClaro) document.body.classList.add('light');
 
-    // histórico colapsado no mobile
     if (window.matchMedia("(max-width: 768px)").matches) {
       document.querySelector(".historico").setAttribute("data-collapsed", "true");
     }
 
-    // listeners de wifi: validação + auto concluir quando completo
     WIFI_INPUT_IDS.forEach(id => {
       const el = document.getElementById(id);
       if (!el._listenerBound) {
@@ -674,7 +894,7 @@
 
           if (!cb.checked && todosWifiPreenchidos()) {
             autoConcluirWifi();
-            return; // autoConcluirWifi já salva
+            return;
           }
 
           salvarEstado();
@@ -683,7 +903,6 @@
       }
     });
 
-    // toggle do bloco wifi: não interfere com checkbox/label
     const liWifi = document.getElementById("li-wifi");
     if (!liWifi._listenerBound) {
       liWifi.addEventListener("click", (e) => {
@@ -697,13 +916,11 @@
       liWifi._listenerBound = true;
     }
 
-    // se não tiver operador, pede
     if (!getOperador()) abrirModalOperador(false);
   }
 
   function registrarConclusao(checkbox) {
     if (!getOperador()) {
-      // força identificar antes de registrar
       checkbox.checked = false;
       abrirModalOperador(true);
       return;
@@ -749,10 +966,12 @@
 
         span.classList.add("checked");
         salvarEstado();
+        desenharGraficoWifi();
         return;
       } else {
         span.classList.remove("checked");
         salvarEstado();
+        desenharGraficoWifi();
         return;
       }
     }
@@ -810,6 +1029,7 @@
 
     relatorioCache.unshift({ tarefa: descricao, operador, dataHora: horario });
     salvarEstado();
+    desenharGraficoWifi();
   }
 
   function resetarChecklist() {
@@ -820,6 +1040,7 @@
     WIFI_INPUT_IDS.forEach(id => { document.getElementById(id).value = ""; });
     document.getElementById("subwifi").style.display = "none";
     salvarEstado();
+    desenharGraficoWifi();
   }
 
   function resetarRelatorio() {
@@ -827,6 +1048,7 @@
     document.querySelector('#tabelaHistorico tbody').innerHTML = "";
     relatorioCache = [];
     salvarEstado();
+    desenharGraficoWifi();
   }
 
   function alternarTema() {
@@ -897,15 +1119,11 @@
   async function getJsPDF() {
     if (_jsPDFCtor) return _jsPDFCtor;
 
-    // 1) tenta importar como módulo
     try {
       const mod = await import("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
       _jsPDFCtor = mod.jsPDF || (mod.default && mod.default.jsPDF);
-    } catch (e) {
-      // ignora e tenta fallback
-    }
+    } catch (e) {}
 
-    // 2) fallback: injeta <script> UMD e usa window.jspdf
     if (!_jsPDFCtor) {
       await new Promise((resolve, reject) => {
         const s = document.createElement("script");
@@ -930,7 +1148,6 @@
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
 
-      // colunas: tarefa | operador | data/hora
       const colDataWidth = 50;
       const colOperWidth = 35;
       const colTaskWidth = pageWidth - margin * 2 - colDataWidth - colOperWidth;
@@ -1013,8 +1230,8 @@
           relatorioCache = Array.isArray(salvo.relatorio) ? salvo.relatorio.slice() : [];
           preencherFiltros(relatorioCache);
           desenharRelatorioHoje();
+          desenharGraficoWifi();
 
-          // se vier operador remoto e não houver local, aplica
           if (!getOperador() && salvo.operador) setOperador(salvo.operador);
         }
       }
